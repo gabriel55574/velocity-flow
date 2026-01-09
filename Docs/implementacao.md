@@ -38,11 +38,13 @@ Este documento serve como **fonte única de verdade** para o projeto Velocity Ag
 | Lucide React | 0.462.0 | ✅ Usado | Ícones |
 | date-fns | 3.6.0 | ✅ Instalado | Datas |
 
-### Backend (NÃO Implementado)
+### Backend (Parcialmente Implementado)
 | Tecnologia | Status | Próximo passo |
 |------------|--------|---------------|
-| Supabase | ❌ Não instalado | `npm install @supabase/supabase-js` |
-| Supabase Auth | ❌ Não configurado | Criar client + context |
+| Supabase Client | ✅ Instalado | — |
+| Database Schema | ✅ 21 tabelas deployed | — |
+| RLS Policies | ✅ 23 policies ativas | — |
+| Supabase Auth | ❌ Não configurado | Integrar no Login.tsx |
 | Supabase Storage | ❌ Não configurado | Configurar buckets |
 | Edge Functions | ❌ Não existe | Criar pasta `/supabase/functions` |
 
@@ -435,6 +437,26 @@ Para cada aba, criar componentes usando dados mock:
 
 ## 9) Changelog de Implementação
 
+### 09 jan 2026 — Integração Supabase Backend ✅
+
+- ✅ Instalado `@supabase/supabase-js`
+- ✅ Criado `/src/lib/supabase.ts` — Cliente tipado
+- ✅ Criado `/src/types/database.ts` — Tipos para 21 tabelas
+- ✅ Criado `/supabase/migrations/20260109_initial_schema.sql`
+- ✅ Deployed: 21 tabelas, 16 enums, 28 indexes, 5 triggers
+- ✅ Habilitado RLS em todas as tabelas
+- ✅ Criadas 23 policies de multi-tenancy
+- ✅ Função helper `user_agency_id()` para policies
+- ✅ Criado `/supabase/seeds/demo_data.sql` (1 agência, 3 clientes, 38 registros)
+
+### 09 jan 2026 — Branding & UI Refinement ✅
+
+- ✅ Integrado `logo.svg` no AppSidebar e AuthLayout
+- ✅ Integrado `favicon.svg` no index.html
+- ✅ Atualizado CSS para cor primária Velocity Green (#0e7360)
+- ✅ Refinado bordas e sombras conforme design guide
+- ✅ Criado `Docs/epic-kickoff-ui-overhaul.md` — Guia de design
+
 ### 09 jan 2026 — Implementação das 10 Abas do Workspace ✅
 
 - ✅ Criada pasta `/src/components/workspace/`
@@ -444,24 +466,13 @@ Para cada aba, criar componentes usando dados mock:
 - ✅ Criado `StrategyTab.tsx` — QFD, Kickoff, Diagnóstico 360, Blueprint 30/60/90
 - ✅ Criado `OperationsTab.tsx` — Kanban Board com TaskCard
 - ✅ Criado `CRMTab.tsx` — Pipeline de leads + Templates WhatsApp
-- ✅ Criado `ContentTab.tsx` — Grid de criativos
+- ✅ Criado `ContentTab.tsx` — Grid de criativos + Calendário editorial
 - ✅ Criado `MediaTab.tsx` — Cards de campanhas + métricas
 - ✅ Criado `DataTab.tsx` — Tracking checklist + dashboards externos
 - ✅ Criado `ApprovalsTab.tsx` — Lista de aprovações com ações
 - ✅ Criado `AssetsTab.tsx` — Inventário de ativos + checklist de acessos
 - ✅ Criado `NotesTab.tsx` — Timeline com busca e filtros
 - ✅ Atualizado `ClientWorkspace.tsx` para usar todos os componentes
-- ✅ Build verificado com sucesso (3391 modules, 3.18s)
-
-### 09 jan 2026 — Análise Inicial
-
-- ✅ Analisado documento `prompt_inicial.md` (especificação completa)
-- ✅ Verificada estrutura do repositório
-- ✅ Criado `pendencias_de_implementacao_velocity_agency_os_v2.md`
-- ✅ Criado este documento (`implementacao.md`)
-- ✅ Criado `AGENT_RULES.md`
-- ⚠️ Identificado que projeto usa Vite (não Next.js)
-- ⚠️ Backend 0% — Supabase não instalado
 
 ### Status Atual do Projeto
 | Área | Progresso |
@@ -471,8 +482,8 @@ Para cada aba, criar componentes usando dados mock:
 | Páginas Agência | ✅ 100% |
 | Portal Cliente | ✅ 80% |
 | Workspace 10 Abas | ✅ 100% |
+| Backend Schema | ✅ 90% |
 | Auth Real | ❌ 0% |
-| Backend | ❌ 0% |
 | Edge Functions | ❌ 0% |
 | n8n Integrações | ❌ 0% |
 

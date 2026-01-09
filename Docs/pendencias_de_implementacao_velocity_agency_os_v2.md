@@ -3,7 +3,7 @@
 **Data de referência:** 09 jan 2026  
 **Documento anterior:** `pendencias_de_implementacao_velocity_agency_os.md`  
 **Documento base:** `prompt_inicial.md` (especificação completa do projeto)  
-**Revisão:** Verificação completa do repositório realizada para validar status
+**Última atualização:** 09 jan 2026 18:33 — Seed data criado
 
 ---
 
@@ -56,10 +56,10 @@ O componente `/src/components/clients/ClientWorkspace.tsx` com todas as abas fun
 
 ### ❌ O que foi confirmado como NÃO IMPLEMENTADO
 
-1. **Supabase**: Não instalado (não consta no `package.json`)
+1. **Supabase**: ✅ Instalado e schema deployed
 2. **Autenticação real**: Zero integração (Login.tsx usa setTimeout mock)
-3. **Backend/RLS/Edge Functions**: 0%
-4. **Persistência de dados**: Todos os dados vêm de `mockData.ts`
+3. **Backend/RLS/Edge Functions**: ✅ RLS implementado, Edge Functions 0%
+4. **Persistência de dados**: Todos os dados vêm de `mockData.ts` (hooks não migrados)
 5. **Integrações n8n**: 0%
 6. **Workflow Engine**: 0%
 
@@ -76,12 +76,12 @@ O componente `/src/components/clients/ClientWorkspace.tsx` com todas as abas fun
 | **Workspace - 10 Abas (UI)** | ✅ Todas implementadas | ✅ 100% |
 | **Auth UI** | Login + Reset Password | ✅ 100% UI |
 | **Auth Real (Supabase)** | Projeto configurado | ⚠️ 10% |
-| **Backend/Database** | Projeto configurado: `cuowpgsuaylnqntwnnur` | ⚠️ 5% |
+| **Backend/Database** | ✅ 21 tabelas + RLS + Indexes | ✅ 90% |
 | **Edge Functions** | Não existe | ❌ 0% |
 | **Integrações n8n** | Não existe | ❌ 0% |
 | **Workflow Engine** | Não existe | ❌ 0% |
 
-**TOTAL GERAL ESTIMADO:** ~40% (UI completa, backend iniciando)
+**TOTAL GERAL ESTIMADO:** ~55% (UI completa, backend schema deployed)
 
 ---
 
@@ -110,35 +110,49 @@ Todos os componentes criados em `/src/components/workspace/`:
 
 ---
 
-### P1 — Preparar Integração Backend
+### P1 — ✅ CONCLUÍDO: Integração Supabase Backend
 
-#### 4.1 Instalar Supabase
-```bash
-npm install @supabase/supabase-js
-```
+**Implementado em 09 jan 2026 18:20**
 
-#### 4.2 Criar estrutura de integração
-- [ ] Criar `/src/lib/supabase.ts` (client)
-- [ ] Criar `/src/types/database.ts` (tipos gerados)
-- [ ] Configurar variáveis de ambiente (`.env`)
+#### Arquivos Criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `/src/lib/supabase.ts` | Cliente Supabase tipado |
+| `/src/types/database.ts` | Tipos TypeScript para 21 tabelas |
+| `/supabase/migrations/20260109_initial_schema.sql` | Schema SQL completo |
 
-#### 4.3 Definir schema do banco
-**21 tabelas conforme documento original:**
-- agencies, users_profile, clients, workspaces, workflows, modules, steps
-- checklist_items, gates, tasks, approvals, assets, crm_leads
-- message_templates, experiments, campaigns, creatives
-- kpi_definitions, kpi_values, audit_logs, clients_users
+#### Schema Deployed (21 tabelas)
+- **Core**: agencies, users_profile, clients
+- **Workspace**: workspaces, workflows, modules, steps, gates, checklist_items
+- **Operations**: tasks, approvals, assets
+- **CRM**: crm_leads, message_templates
+- **Campaigns**: campaigns, creatives
+- **KPIs**: kpi_definitions, kpi_values, experiments
+- **Access**: audit_logs, clients_users
+
+#### Segurança Implementada
+- ✅ 16 enums criados
+- ✅ 28 indexes criados
+- ✅ 5 triggers de `updated_at`
+- ✅ RLS habilitado em todas as 21 tabelas
+- ✅ 23 policies de multi-tenancy
+- ✅ Função helper `user_agency_id()` para policies
 
 ---
 
 ### P2 — Backend/Supabase Essencial
 
-#### 5.1 Database
-- [ ] Criar schema SQL completo
-- [ ] Implementar Row Level Security (RLS) multi-tenant
+#### 5.1 Database (✅ Concluído)
+- [x] Criar schema SQL completo
+- [x] Implementar Row Level Security (RLS) multi-tenant
 - [ ] Configurar Supabase Auth
 - [ ] Configurar Storage (assets)
-- [ ] Criar seeds (dados demo)
+- [x] Criar seeds (dados demo) — `supabase/seeds/demo_data.sql`
+
+**Seeds inseridos (09 jan 2026):**
+- 1 Agência, 3 Clientes, 3 Workspaces, 3 Workflows
+- 5 Modules, 5 Steps, 6 Tasks, 5 Leads
+- 4 Campaigns, 4 Creatives, 4 KPIs
 
 #### 5.2 Hooks de Data
 - [ ] Migrar mockData para hooks com TanStack Query
