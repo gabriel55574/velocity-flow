@@ -11,6 +11,14 @@ import Reports from "./pages/Reports";
 import Playbooks from "./pages/Playbooks";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+// Auth
+import Login from "./pages/auth/Login";
+import ResetPassword from "./pages/auth/ResetPassword";
+// Client Portal
+import ClientDashboard from "./pages/client/Dashboard";
+import ClientApprovals from "./pages/client/Approvals";
+import ClientAssets from "./pages/client/Assets";
+import ClientReports from "./pages/client/Reports";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +29,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Auth */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          
+          {/* Agency Portal */}
           <Route path="/" element={<Index />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/clients/:id" element={<ClientDetail />} />
@@ -28,6 +41,13 @@ const App = () => (
           <Route path="/reports" element={<Reports />} />
           <Route path="/playbooks" element={<Playbooks />} />
           <Route path="/settings" element={<Settings />} />
+          
+          {/* Client Portal */}
+          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="/client/approvals" element={<ClientApprovals />} />
+          <Route path="/client/assets" element={<ClientAssets />} />
+          <Route path="/client/reports" element={<ClientReports />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
