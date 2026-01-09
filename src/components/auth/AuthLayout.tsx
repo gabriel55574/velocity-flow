@@ -10,10 +10,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">V</span>
-            </div>
+          <div className="inline-flex items-center gap-3 mb-2">
+            <img src="/logo.svg" alt="Velocity Logo" className="h-10 w-10 object-contain" />
             <span className="text-2xl font-bold text-foreground">Velocity</span>
           </div>
           <p className="text-sm text-muted-foreground">Agency Operating System</p>

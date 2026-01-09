@@ -14,7 +14,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [portalType, setPortalType] = useState<'agency' | 'client'>('agency');
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -31,7 +31,7 @@ export default function Login() {
         title: "Login realizado!",
         description: "Bem-vindo ao Velocity Agency OS",
       });
-      
+
       if (portalType === 'agency') {
         navigate('/');
       } else {
@@ -90,8 +90,8 @@ export default function Login() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Senha</Label>
-            <Link 
-              to="/reset-password" 
+            <Link
+              to="/reset-password"
               className="text-xs text-primary hover:underline"
             >
               Esqueci minha senha
@@ -117,9 +117,9 @@ export default function Login() {
           </div>
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full button-primary"
+        <Button
+          type="submit"
+          className="w-full"
           disabled={isLoading}
         >
           {isLoading ? (

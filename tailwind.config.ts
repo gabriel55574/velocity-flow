@@ -95,10 +95,10 @@ export default {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        "glass": "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
-        "glass-lg": "0 12px 48px 0 rgba(31, 38, 135, 0.1)",
-        "glow": "0 0 40px rgba(59, 130, 246, 0.15)",
-        "glow-lg": "0 0 60px rgba(59, 130, 246, 0.2)",
+        "glass": "0 8px 32px 0 rgba(14, 115, 96, 0.05)",
+        "glass-lg": "0 12px 48px 0 rgba(14, 115, 96, 0.08)",
+        "glow": "0 0 40px rgba(14, 115, 96, 0.12)",
+        "glow-lg": "0 0 60px rgba(14, 115, 96, 0.18)",
       },
       keyframes: {
         "accordion-down": {

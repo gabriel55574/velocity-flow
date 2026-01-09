@@ -5,8 +5,20 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { 
-  ArrowLeft, 
+import {
+  WorkflowTimeline,
+  StrategyTab,
+  OperationsTab,
+  CRMTab,
+  ContentTab,
+  MediaTab,
+  DataTab,
+  ApprovalsTab,
+  AssetsTab,
+  NotesTab
+} from "@/components/workspace";
+import {
+  ArrowLeft,
   LayoutDashboard,
   GitBranch,
   Target,
@@ -78,7 +90,7 @@ export function ClientWorkspace() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <PageHeader 
+      <PageHeader
         title={clientData.name}
         subtitle={`${clientData.niche} • ${clientData.phase}`}
         actions={
@@ -140,8 +152,8 @@ export function ClientWorkspace() {
           <div className="overflow-x-auto">
             <TabsList className="inline-flex h-auto p-1 bg-secondary/50">
               {workspaceTabs.slice(0, 6).map((tab) => (
-                <TabsTrigger 
-                  key={tab.id} 
+                <TabsTrigger
+                  key={tab.id}
                   value={tab.id}
                   className="gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
                 >
@@ -228,8 +240,8 @@ export function ClientWorkspace() {
                         {clientData.tasks
                           .filter((t) => t.status === status)
                           .map((task, i) => (
-                            <div 
-                              key={i} 
+                            <div
+                              key={i}
                               className="p-3 rounded-xl bg-secondary/50 border border-border/50"
                             >
                               <p className="text-sm font-medium">{task.title}</p>
@@ -244,18 +256,55 @@ export function ClientWorkspace() {
             </GlassCard>
           </TabsContent>
 
-          {/* Placeholder for other tabs */}
-          {workspaceTabs.slice(1).map((tab) => (
-            <TabsContent key={tab.id} value={tab.id}>
-              <GlassCard className="p-12 text-center">
-                <tab.icon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                <h3 className="font-semibold mb-2">{tab.label}</h3>
-                <p className="text-sm text-muted-foreground">
-                  Conteúdo de {tab.label} será implementado em breve
-                </p>
-              </GlassCard>
-            </TabsContent>
-          ))}
+          {/* Workflows Tab */}
+          <TabsContent value="workflows" className="space-y-6 mt-4">
+            <WorkflowTimeline />
+          </TabsContent>
+
+          {/* Strategy Tab */}
+          <TabsContent value="strategy" className="space-y-6 mt-4">
+            <StrategyTab />
+          </TabsContent>
+
+          {/* Operations Tab */}
+          <TabsContent value="operations" className="space-y-6 mt-4">
+            <OperationsTab />
+          </TabsContent>
+
+          {/* CRM Tab */}
+          <TabsContent value="crm" className="space-y-6 mt-4">
+            <CRMTab />
+          </TabsContent>
+
+          {/* Content Tab */}
+          <TabsContent value="content" className="space-y-6 mt-4">
+            <ContentTab />
+          </TabsContent>
+
+          {/* Media Tab */}
+          <TabsContent value="media" className="space-y-6 mt-4">
+            <MediaTab />
+          </TabsContent>
+
+          {/* Data Tab */}
+          <TabsContent value="data" className="space-y-6 mt-4">
+            <DataTab />
+          </TabsContent>
+
+          {/* Approvals Tab */}
+          <TabsContent value="approvals" className="space-y-6 mt-4">
+            <ApprovalsTab />
+          </TabsContent>
+
+          {/* Assets Tab */}
+          <TabsContent value="assets" className="space-y-6 mt-4">
+            <AssetsTab />
+          </TabsContent>
+
+          {/* Notes Tab */}
+          <TabsContent value="notes" className="space-y-6 mt-4">
+            <NotesTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>

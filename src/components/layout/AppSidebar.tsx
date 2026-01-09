@@ -1,7 +1,7 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
   Zap,
   Calendar,
   BarChart3,
@@ -51,9 +51,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <NavLink to="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
-            V
-          </div>
+          <img src="/logo.svg" alt="Velocity Logo" className="h-9 w-9 object-contain" />
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-sm text-sidebar-foreground">Velocity</span>
