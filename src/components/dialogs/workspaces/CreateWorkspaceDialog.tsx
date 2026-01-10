@@ -51,21 +51,11 @@ export function CreateWorkspaceDialog({
         },
     });
 
-    // Helper to generate slug
-    const generateSlug = (name: string) => {
-        return name
-            .toLowerCase()
-            .replace(/[^\w ]+/g, '')
-            .replace(/ +/g, '-');
-    };
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             await createWorkspace.mutateAsync({
-                ...values,
+                name: values.name,
                 client_id: clientId,
-                slug: generateSlug(values.name),
-                is_active: true,
             });
 
             toast({

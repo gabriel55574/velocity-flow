@@ -142,26 +142,14 @@ export function useUpdateCampaignMetrics() {
             id,
             spent,
             budget,
-            impressions,
-            clicks,
-            conversions,
-            revenue
         }: {
             id: string;
             spent?: number;
             budget?: number;
-            impressions?: number;
-            clicks?: number;
-            conversions?: number;
-            revenue?: number;
         }) => {
             const updates: CampaignUpdate = {
                 spent,
                 budget,
-                impressions,
-                clicks,
-                conversions,
-                revenue
             };
 
             const { data, error } = await supabase

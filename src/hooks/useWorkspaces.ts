@@ -165,10 +165,10 @@ export function useUpdateWorkspaceSettings() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, settings }: { id: string; settings: Record<string, unknown> }) => {
+        mutationFn: async ({ id, settings }: { id: string; settings: object }) => {
             const { data, error } = await supabase
                 .from('workspaces')
-                .update({ settings })
+                .update({ settings: settings as Database['public']['Tables']['workspaces']['Update']['settings'] })
                 .eq('id', id)
                 .select()
                 .single();

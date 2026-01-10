@@ -20,8 +20,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -41,8 +39,6 @@ type Workspace = Database['public']['Tables']['workspaces']['Row'];
 
 const formSchema = z.object({
     name: z.string().min(2, { message: 'Nome deve ter pelo menos 2 caracteres' }),
-    description: z.string().optional(),
-    is_active: z.boolean(),
 });
 
 interface EditWorkspaceDialogProps {
@@ -65,8 +61,6 @@ export function EditWorkspaceDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: workspace.name,
-            description: workspace.description || '',
-            is_active: workspace.is_active || false,
         },
     });
 
@@ -74,8 +68,6 @@ export function EditWorkspaceDialog({
         if (open && workspace) {
             form.reset({
                 name: workspace.name,
-                description: workspace.description || '',
-                is_active: workspace.is_active || false,
             });
         }
     }, [open, workspace, form]);
@@ -84,7 +76,7 @@ export function EditWorkspaceDialog({
         try {
             await updateWorkspace.mutateAsync({
                 id: workspace.id,
-                ...values,
+                name: values.name,
             });
 
             toast({
@@ -141,44 +133,6 @@ export function EditWorkspaceDialog({
                                             <Input {...field} />
                                         </FormControl>
                                         <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição (Opcional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="resize-none"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="is_active"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                        <div className="space-y-0.5">
-                                            <FormLabel>Ativo</FormLabel>
-                                            <DialogDescription>
-                                                Workspace visível no portal do cliente.
-                                            </DialogDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
                                     </FormItem>
                                 )}
                             />
