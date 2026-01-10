@@ -33,7 +33,7 @@ import {
 import { useUpdateWorkspace, useDeleteWorkspace } from '@/hooks/useWorkspaces';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2 } from 'lucide-react';
-import { Database } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
 
 type Workspace = Database['public']['Tables']['workspaces']['Row'];
 

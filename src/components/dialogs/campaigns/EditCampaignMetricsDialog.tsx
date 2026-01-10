@@ -22,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useUpdateCampaign } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
-import { Database } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
 

@@ -41,7 +41,7 @@ import {
 import { useUpdateExperiment, useDeleteExperiment } from '@/hooks/useExperiments';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2 } from 'lucide-react';
-import { Database } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
 
 type Experiment = Database['public']['Tables']['experiments']['Row'];
 

@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateMessageTemplate, useDeleteMessageTemplate } from '@/hooks/useMessageTemplates';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Trash2, Copy } from 'lucide-react';
 
 type MessageTemplate = Database['public']['Tables']['message_templates']['Row'];

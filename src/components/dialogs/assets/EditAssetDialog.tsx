@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateAsset, useDeleteAsset } from '@/hooks/useAssets';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Trash2, ExternalLink, Image, Video, FileText, Link as LinkIcon, Key, Copy } from 'lucide-react';
 
 type Asset = Database['public']['Tables']['assets']['Row'];

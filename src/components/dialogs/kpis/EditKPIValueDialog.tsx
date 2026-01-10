@@ -33,7 +33,7 @@ import {
 import { useUpdateKPIValue, useDeleteKPIValue } from '@/hooks/useKPIs';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2 } from 'lucide-react';
-import { Database } from '@/types/database';
+import { Database } from '@/integrations/supabase/types';
 
 type KPIValue = Database['public']['Tables']['kpi_values']['Row'] & {
     kpi?: {

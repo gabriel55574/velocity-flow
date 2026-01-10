@@ -42,7 +42,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { useTeamMembers } from '@/hooks/useUsers';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Trash2 } from 'lucide-react';
 
 type Lead = Database['public']['Tables']['crm_leads']['Row'];
