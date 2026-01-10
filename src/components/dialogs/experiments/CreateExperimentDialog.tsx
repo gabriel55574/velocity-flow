@@ -21,22 +21,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { useCreateExperiment } from '@/hooks/useExperiments';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
     name: z.string().min(3, { message: 'Nome deve ter pelo menos 3 caracteres' }),
-    description: z.string().optional(),
     hypothesis: z.string().min(10, { message: 'Descreva a hipótese do experimento' }),
-    metrics: z.string().min(5, { message: 'Defina as métricas de sucesso' }),
-    status: z.enum(['draft', 'running', 'completed', 'cancelled']).default('draft'),
+    notes: z.string().optional(),
+    status: z.enum(['planned', 'running', 'completed', 'cancelled']).default('planned'),
     start_date: z.string().optional(),
     end_date: z.string().optional(),
 });
@@ -59,10 +51,9 @@ export function CreateExperimentDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: '',
-            description: '',
             hypothesis: '',
-            metrics: '',
-            status: 'draft',
+            notes: '',
+            status: 'planned',
             start_date: '',
             end_date: '',
         },
@@ -71,13 +62,18 @@ export function CreateExperimentDialog({
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             await createExperiment.mutateAsync({
-                ...values,
+                name: values.name,
+                hypothesis: values.hypothesis,
+                notes: values.notes,
+                status: values.status,
+                start_date: values.start_date || null,
+                end_date: values.end_date || null,
                 client_id: clientId,
             });
 
             toast({
                 title: 'Experimento criado!',
-                description: `O experimento "${values.name}" foi registrado como rascunho.`,
+                description: `O experimento "${values.name}" foi registrado.`,
             });
             onOpenChange(false);
             form.reset();
@@ -136,10 +132,10 @@ export function CreateExperimentDialog({
 
                         <FormField
                             control={form.control}
-                            name="metrics"
+                            name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Métricas de Sucesso</FormLabel>
+                                    <FormLabel>Notas / Métricas de Sucesso</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Ex: Aumento de 5% na Taxa de Conversão" {...field} />
                                     </FormControl>
@@ -176,24 +172,6 @@ export function CreateExperimentDialog({
                                 )}
                             />
                         </div>
-
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Descrição Detalhada (Opcional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="Detalhes sobre a implementação do teste..."
-                                            className="resize-none"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
 
                         <DialogFooter>
                             <Button

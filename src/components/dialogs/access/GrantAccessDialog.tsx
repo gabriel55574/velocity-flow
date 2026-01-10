@@ -32,7 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
     user_id: z.string().min(1, { message: 'Selecione um usuário' }),
-    role: z.enum(['owner', 'admin', 'editor', 'viewer']).default('viewer'),
+    role: z.enum(['admin', 'editor', 'viewer']).default('viewer'),
 });
 
 interface GrantAccessDialogProps {
@@ -63,9 +63,9 @@ export function GrantAccessDialog({
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             await grantAccess.mutateAsync({
-                ...values,
+                user_id: values.user_id,
+                role: values.role,
                 client_id: clientId,
-                agency_id: agencyId,
             });
 
             toast({
@@ -142,7 +142,6 @@ export function GrantAccessDialog({
                                             <SelectItem value="viewer">Visualizador (Viewer)</SelectItem>
                                             <SelectItem value="editor">Editor</SelectItem>
                                             <SelectItem value="admin">Administrador</SelectItem>
-                                            <SelectItem value="owner">Proprietário (Owner)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <DialogDescription className="text-xs pt-1">

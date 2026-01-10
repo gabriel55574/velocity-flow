@@ -20,7 +20,7 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useUpdateCampaignMetrics } from '@/hooks/useCampaigns';
+import { useUpdateCampaign } from '@/hooks/useCampaigns';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/types/database';
 
@@ -29,10 +29,6 @@ type Campaign = Database['public']['Tables']['campaigns']['Row'];
 const formSchema = z.object({
     budget: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
     spent: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
-    impressions: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
-    clicks: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
-    conversions: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
-    revenue: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number().optional()),
 });
 
 interface EditCampaignMetricsDialogProps {
@@ -47,17 +43,13 @@ export function EditCampaignMetricsDialog({
     campaign,
 }: EditCampaignMetricsDialogProps) {
     const { toast } = useToast();
-    const updateMetrics = useUpdateCampaignMetrics();
+    const updateCampaign = useUpdateCampaign();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             budget: campaign.budget || undefined,
             spent: campaign.spent || undefined,
-            impressions: campaign.impressions || undefined,
-            clicks: campaign.clicks || undefined,
-            conversions: campaign.conversions || undefined,
-            revenue: campaign.revenue || undefined,
         },
     });
 
@@ -66,17 +58,13 @@ export function EditCampaignMetricsDialog({
             form.reset({
                 budget: campaign.budget || undefined,
                 spent: campaign.spent || undefined,
-                impressions: campaign.impressions || undefined,
-                clicks: campaign.clicks || undefined,
-                conversions: campaign.conversions || undefined,
-                revenue: campaign.revenue || undefined,
             });
         }
     }, [open, campaign, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            await updateMetrics.mutateAsync({
+            await updateCampaign.mutateAsync({
                 id: campaign.id,
                 ...values,
             });
@@ -136,64 +124,6 @@ export function EditCampaignMetricsDialog({
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="impressions"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Impressões</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="clicks"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Cliques</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="conversions"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Conversões</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="revenue"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Receita (Revenue)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="any" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
                         <DialogFooter>
                             <Button
                                 type="button"
@@ -202,8 +132,8 @@ export function EditCampaignMetricsDialog({
                             >
                                 Cancelar
                             </Button>
-                            <Button type="submit" disabled={updateMetrics.isPending}>
-                                {updateMetrics.isPending ? 'Salvando...' : 'Salvar Métricas'}
+                            <Button type="submit" disabled={updateCampaign.isPending}>
+                                {updateCampaign.isPending ? 'Salvando...' : 'Salvar Métricas'}
                             </Button>
                         </DialogFooter>
                     </form>
