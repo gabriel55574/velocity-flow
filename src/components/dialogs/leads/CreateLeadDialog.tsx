@@ -80,7 +80,9 @@ export function CreateLeadDialog({
     const onSubmit = async (data: FormData) => {
         try {
             await createLead.mutateAsync({
-                ...data,
+                name: data.name,
+                stage: data.stage,
+                score: data.score,
                 client_id: clientId,
                 email: data.email || null,
                 phone: data.phone || null,

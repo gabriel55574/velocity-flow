@@ -67,7 +67,6 @@ export function CreateNoteDialog({
                 type: values.type,
                 content: values.content,
                 client_id: clientId,
-                agency_id: agencyId,
                 user_id: userId,
             });
 

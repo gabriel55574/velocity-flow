@@ -76,7 +76,10 @@ export function CreateTaskDialog({
     const onSubmit = async (data: FormData) => {
         try {
             await createTask.mutateAsync({
-                ...data,
+                title: data.title,
+                description: data.description || null,
+                status: data.status,
+                priority: data.priority,
                 client_id: clientId,
                 due_date: data.due_date || null,
                 assignee_id: data.assignee_id || null,

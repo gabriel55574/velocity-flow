@@ -73,9 +73,23 @@ export function useCreateExperiment() {
 
     return useMutation({
         mutationFn: async (experiment: ExperimentInsert) => {
+            // Ensure hypothesis is provided (required by DB)
+            if (!experiment.hypothesis) {
+                throw new Error('Hypothesis is required');
+            }
+            
             const { data, error } = await supabase
                 .from('experiments')
-                .insert(experiment)
+                .insert({
+                    client_id: experiment.client_id,
+                    name: experiment.name,
+                    hypothesis: experiment.hypothesis,
+                    notes: experiment.notes,
+                    status: experiment.status,
+                    start_date: experiment.start_date,
+                    end_date: experiment.end_date,
+                    result: experiment.result,
+                })
                 .select()
                 .single();
 

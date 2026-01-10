@@ -32,8 +32,7 @@ import { useCreateMessageTemplate } from '@/hooks/useMessageTemplates';
 
 const schema = z.object({
     name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-    channel: z.enum(['whatsapp', 'email', 'sms', 'instagram', 'telefone']),
-    category: z.string().optional(),
+    channel: z.enum(['whatsapp', 'email', 'sms']),
     content: z.string().min(10, 'Conteúdo deve ter no mínimo 10 caracteres'),
 });
 
@@ -58,7 +57,6 @@ export function CreateTemplateDialog({
         defaultValues: {
             name: '',
             channel: 'whatsapp',
-            category: '',
             content: '',
         },
     });
@@ -68,7 +66,6 @@ export function CreateTemplateDialog({
             await createTemplate.mutateAsync({
                 name: data.name,
                 channel: data.channel,
-                category: data.category || null,
                 content: data.content,
                 client_id: clientId,
             });
@@ -93,11 +90,7 @@ export function CreateTemplateDialog({
         whatsapp: '💬 WhatsApp',
         email: '📧 E-mail',
         sms: '📱 SMS',
-        instagram: '📷 Instagram DM',
-        telefone: '📞 Telefone',
     };
-
-    const categoryOptions = ['Primeiro Contato', 'Follow-up', 'Proposta', 'Fechamento', 'Pós-venda', 'Reativação'];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,40 +115,21 @@ export function CreateTemplateDialog({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="channel">Canal</Label>
-                            <Select
-                                value={form.watch('channel')}
-                                onValueChange={(value) => form.setValue('channel', value as FormData['channel'])}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(channelLabels).map(([value, label]) => (
-                                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="category">Categoria</Label>
-                            <Select
-                                value={form.watch('category') || ''}
-                                onValueChange={(value) => form.setValue('category', value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecionar..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categoryOptions.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="channel">Canal</Label>
+                        <Select
+                            value={form.watch('channel')}
+                            onValueChange={(value) => form.setValue('channel', value as FormData['channel'])}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(channelLabels).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-2">

@@ -7,7 +7,8 @@ import {
     Plus,
     Search,
     User as UserIcon,
-    Loader2
+    Loader2,
+    AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,11 +39,19 @@ const typeConfig = {
 };
 
 interface NoteCardProps {
-    note: any; // Using any for now to simplify with the combined query result
+    note: {
+        id: string;
+        type: 'note' | 'decision' | 'ata';
+        content: string;
+        created_at: string;
+        user?: {
+            full_name: string;
+        };
+    };
 }
 
 function NoteCard({ note }: NoteCardProps) {
-    const config = typeConfig[note.type as keyof typeof typeConfig] || typeConfig.note;
+    const config = typeConfig[note.type] || typeConfig.note;
     const TypeIcon = config.icon;
 
     return (
@@ -93,7 +102,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
     });
 
     const filteredNotes = notes?.filter(note =>
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        note.content?.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
 
     const noteCounts = {
@@ -105,6 +114,21 @@ export function NotesTab({ clientId }: NotesTabProps) {
 
     return (
         <div className="space-y-6">
+            {/* Coming Soon Banner */}
+            <GlassCard className="border-amber-500/30 bg-amber-500/5">
+                <GlassCardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                        <div>
+                            <p className="font-medium text-amber-600">Funcionalidade em desenvolvimento</p>
+                            <p className="text-sm text-muted-foreground">
+                                A tabela de notas ainda não foi criada no banco de dados.
+                            </p>
+                        </div>
+                    </div>
+                </GlassCardContent>
+            </GlassCard>
+
             {/* Header */}
             <GlassCard>
                 <GlassCardContent className="p-4">
@@ -117,6 +141,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
+                                disabled
                             />
                         </div>
 
@@ -129,6 +154,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
                                     variant={filterType === type ? "default" : "outline"}
                                     onClick={() => setFilterType(type)}
                                     className="gap-1"
+                                    disabled
                                 >
                                     {type === "all" ? "Todos" : typeConfig[type].label}
                                     <span className="text-xs opacity-70">({noteCounts[type]})</span>
@@ -141,7 +167,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
                             size="sm"
                             className="gap-2"
                             onClick={() => setIsCreateDialogOpen(true)}
-                            disabled={!currentUser}
+                            disabled
                         >
                             <Plus className="h-4 w-4" />
                             Nova Nota
@@ -172,6 +198,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
                         <div className="text-center py-8 text-muted-foreground">
                             <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
                             <p className="text-sm">Nenhuma nota encontrada</p>
+                            <p className="text-xs mt-1">Funcionalidade em desenvolvimento</p>
                         </div>
                     )}
                 </GlassCardContent>
