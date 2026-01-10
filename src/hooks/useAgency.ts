@@ -7,7 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 
 type Agency = Database['public']['Tables']['agencies']['Row'];
 type AgencyUpdate = Database['public']['Tables']['agencies']['Update'];

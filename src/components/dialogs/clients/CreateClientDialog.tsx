@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateClient } from '@/hooks/useClients';
+import { useCurrentAgency } from '@/hooks/useAgency';
 
 const schema = z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
@@ -38,15 +39,19 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-interface CreateClientDialogProps {
+export interface CreateClientDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    agencyId: string;
+    agencyId?: string;
 }
 
-export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClientDialogProps) {
+export function CreateClientDialog({ open, onOpenChange, agencyId: propAgencyId }: CreateClientDialogProps) {
     const { toast } = useToast();
     const createClient = useCreateClient();
+    const { data: currentAgency } = useCurrentAgency();
+
+    // Use provided agencyId or get from current agency
+    const agencyId = propAgencyId || currentAgency?.id;
 
     const form = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -76,6 +81,15 @@ export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClien
     };
 
     const onSubmit = async (data: FormData) => {
+        if (!agencyId) {
+            toast({
+                title: 'Erro',
+                description: 'Agência não encontrada. Faça login novamente.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         try {
             await createClient.mutateAsync({
                 name: data.name,
@@ -111,12 +125,12 @@ export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClien
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Nome do Cliente *</Label>
+                        <Label htmlFor="name">Nome *</Label>
                         <Input
                             id="name"
-                            placeholder="Ex: Empresa XYZ"
+                            placeholder="Nome do cliente"
                             {...form.register('name')}
                             onChange={handleNameChange}
                         />
@@ -126,31 +140,34 @@ export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClien
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="slug">Slug (URL) *</Label>
+                        <Label htmlFor="slug">Slug *</Label>
                         <Input
                             id="slug"
-                            placeholder="empresa-xyz"
+                            placeholder="nome-do-cliente"
                             {...form.register('slug')}
                         />
                         {form.formState.errors.slug && (
                             <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
                         )}
+                        <p className="text-xs text-muted-foreground">
+                            Identificador único (minúsculas, sem espaços)
+                        </p>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="niche">Nicho/Segmento</Label>
+                        <Label htmlFor="niche">Nicho</Label>
                         <Input
                             id="niche"
-                            placeholder="Ex: E-commerce, SaaS, Educação..."
+                            placeholder="Ex: Harmonização Facial, Dermatologia"
                             {...form.register('niche')}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="status">Status Inicial</Label>
+                        <Label htmlFor="status">Status</Label>
                         <Select
-                            value={form.watch('status')}
                             onValueChange={(value) => form.setValue('status', value as FormData['status'])}
+                            defaultValue={form.getValues('status')}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione o status" />
@@ -160,15 +177,23 @@ export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClien
                                 <SelectItem value="onboarding">Onboarding</SelectItem>
                                 <SelectItem value="active">Ativo</SelectItem>
                                 <SelectItem value="paused">Pausado</SelectItem>
+                                <SelectItem value="churned">Churned</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <DialogFooter className="pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={createClient.isPending}>
+                        <Button
+                            type="submit"
+                            disabled={createClient.isPending || !agencyId}
+                        >
                             {createClient.isPending ? 'Criando...' : 'Criar Cliente'}
                         </Button>
                     </DialogFooter>

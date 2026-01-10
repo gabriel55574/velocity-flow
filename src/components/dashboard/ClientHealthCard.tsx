@@ -4,6 +4,7 @@ import { ChevronRight, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ClientHealthCardProps {
+  id?: string;
   name: string;
   niche: string;
   phase: string;

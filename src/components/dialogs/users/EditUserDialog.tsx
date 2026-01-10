@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateUser, useUpdateUserRole, useToggleUserActive } from '@/hooks/useUsers';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 
 type User = Database['public']['Tables']['users_profile']['Row'];
 

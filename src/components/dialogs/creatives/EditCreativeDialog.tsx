@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateCreative, useDeleteCreative, useUpdateCreativeStatus } from '@/hooks/useCreatives';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Trash2, ExternalLink } from 'lucide-react';
 
 type Creative = Database['public']['Tables']['creatives']['Row'];

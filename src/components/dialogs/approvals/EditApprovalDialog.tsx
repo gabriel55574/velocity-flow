@@ -38,7 +38,7 @@ import {
     useRejectItem,
     useRequestRevision
 } from '@/hooks/useApprovals';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Check, X, RotateCcw, Trash2, ExternalLink } from 'lucide-react';
 
 type Approval = Database['public']['Tables']['approvals']['Row'];

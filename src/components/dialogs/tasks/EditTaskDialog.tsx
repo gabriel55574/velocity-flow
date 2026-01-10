@@ -31,7 +31,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { useTeamMembers } from '@/hooks/useUsers';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import {
     AlertDialog,
     AlertDialogAction,

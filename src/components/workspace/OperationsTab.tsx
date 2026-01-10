@@ -4,7 +4,7 @@ import { Play, CheckCircle2, Clock, AlertTriangle, Plus, User, Loader2 } from "l
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { Database } from "@/types/database";
+import { Database } from "@/integrations/supabase/types";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLeads } from "@/hooks/useLeads";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
-import { Database } from "@/types/database";
+import { Database } from "@/integrations/supabase/types";
 
 type Lead = Database["public"]["Tables"]["crm_leads"]["Row"];
 type MessageTemplate = Database["public"]["Tables"]["message_templates"]["Row"];

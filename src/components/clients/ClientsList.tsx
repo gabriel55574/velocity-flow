@@ -2,114 +2,106 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ClientHealthCard } from "@/components/dashboard/ClientHealthCard";
 import { GlassCard } from "@/components/ui/glass-card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Plus, 
   Search, 
-  Filter,
   LayoutGrid,
   List,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useClients } from "@/hooks/useClients";
+import { CreateClientDialog } from "@/components/dialogs/clients/CreateClientDialog";
 
-// Mock data
-const clients = [
-  {
-    id: "1",
-    name: "Visage Face",
-    niche: "Harmonização Facial",
-    phase: "Operação",
-    health: "risk" as const,
-    blockedGates: 2,
-    pendingApprovals: 3,
-    owner: "Maria CS",
-  },
-  {
-    id: "2",
-    name: "Clínica Dermato+",
-    niche: "Dermatologia",
-    phase: "Setup",
-    health: "warn" as const,
-    blockedGates: 1,
-    pendingApprovals: 0,
-    owner: "João CS",
-  },
-  {
-    id: "3",
-    name: "Studio Estética",
-    niche: "Estética Geral",
-    phase: "Go-Live",
-    health: "warn" as const,
-    blockedGates: 0,
-    pendingApprovals: 2,
-    owner: "Maria CS",
-  },
-  {
-    id: "4",
-    name: "Centro Médico SP",
-    niche: "Clínica Geral",
-    phase: "Onboarding",
-    health: "ok" as const,
-    blockedGates: 0,
-    pendingApprovals: 1,
-    owner: "Pedro CS",
-  },
-  {
-    id: "5",
-    name: "Dr. Paulo Odonto",
-    niche: "Odontologia",
-    phase: "Estratégia",
-    health: "ok" as const,
-    blockedGates: 0,
-    pendingApprovals: 0,
-    owner: "Ana CS",
-  },
-  {
-    id: "6",
-    name: "Wellness Center",
-    niche: "Bem-estar",
-    phase: "Operação",
-    health: "ok" as const,
-    blockedGates: 0,
-    pendingApprovals: 0,
-    owner: "João CS",
-  },
-];
+const phases = ["Todos", "lead", "onboarding", "active", "paused", "churned"];
 
-const phases = ["Todos", "Onboarding", "Estratégia", "Setup", "Go-Live", "Operação", "Escala"];
-const healthFilters = ["Todos", "Em Risco", "Atenção", "Saudável"];
+// Map status to display labels
+const statusLabels: Record<string, string> = {
+  lead: "Lead",
+  onboarding: "Onboarding",
+  active: "Ativo",
+  paused: "Pausado",
+  churned: "Churned",
+};
+
+// Convert health_score (0-100) to health status
+function getHealthStatus(score: number | null): "ok" | "warn" | "risk" {
+  if (score === null) return "ok";
+  if (score >= 80) return "ok";
+  if (score >= 50) return "warn";
+  return "risk";
+}
 
 export function ClientsList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("Todos");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const navigate = useNavigate();
 
-  const filteredClients = clients.filter((client) => {
+  const { data: clients, isLoading, error } = useClients();
+
+  // Filter clients
+  const filteredClients = (clients || []).filter((client) => {
     const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.niche.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPhase = selectedPhase === "Todos" || client.phase === selectedPhase;
+      (client.niche?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchesPhase = selectedPhase === "Todos" || client.status === selectedPhase;
     return matchesSearch && matchesPhase;
   });
 
+  // Calculate stats
   const stats = {
-    total: clients.length,
-    atRisk: clients.filter(c => c.health === "risk").length,
-    warning: clients.filter(c => c.health === "warn").length,
-    healthy: clients.filter(c => c.health === "ok").length,
+    total: clients?.length || 0,
+    atRisk: clients?.filter(c => getHealthStatus(c.health_score) === "risk").length || 0,
+    warning: clients?.filter(c => getHealthStatus(c.health_score) === "warn").length || 0,
+    healthy: clients?.filter(c => getHealthStatus(c.health_score) === "ok").length || 0,
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-full">
+        <PageHeader title="Clientes" subtitle="Carregando..." />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Carregando clientes...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-full">
+        <PageHeader title="Clientes" subtitle="Erro ao carregar" />
+        <main className="flex-1 flex items-center justify-center">
+          <GlassCard className="p-8 text-center max-w-md">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="font-semibold mb-2">Erro ao carregar clientes</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Faça login para visualizar seus clientes
+            </p>
+            <Button onClick={() => navigate('/login')}>
+              Fazer Login
+            </Button>
+          </GlassCard>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-full">
       <PageHeader 
         title="Clientes" 
-        subtitle={`${clients.length} clientes ativos`}
+        subtitle={`${stats.total} cliente${stats.total !== 1 ? 's' : ''} ativo${stats.total !== 1 ? 's' : ''}`}
         actions={
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Novo Cliente</span>
           </Button>
@@ -151,7 +143,7 @@ export function ClientsList() {
           
           <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
             <div className="flex gap-1.5 p-1 bg-secondary/50 rounded-xl">
-              {phases.slice(0, 5).map((phase) => (
+              {phases.map((phase) => (
                 <Button
                   key={phase}
                   variant="ghost"
@@ -162,7 +154,7 @@ export function ClientsList() {
                   )}
                   onClick={() => setSelectedPhase(phase)}
                 >
-                  {phase}
+                  {phase === "Todos" ? "Todos" : statusLabels[phase] || phase}
                 </Button>
               ))}
             </div>
@@ -204,7 +196,14 @@ export function ClientsList() {
             filteredClients.map((client) => (
               <ClientHealthCard 
                 key={client.id} 
-                {...client} 
+                id={client.id}
+                name={client.name}
+                niche={client.niche || "Sem nicho"}
+                phase={statusLabels[client.status || "active"] || "Ativo"}
+                health={getHealthStatus(client.health_score)}
+                blockedGates={0}
+                pendingApprovals={0}
+                owner="—"
                 onClick={() => navigate(`/clients/${client.id}`)}
               />
             ))
@@ -213,9 +212,11 @@ export function ClientsList() {
               <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="font-semibold mb-2">Nenhum cliente encontrado</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Tente ajustar os filtros ou adicione um novo cliente
+                {searchQuery || selectedPhase !== "Todos" 
+                  ? "Tente ajustar os filtros ou adicione um novo cliente"
+                  : "Comece adicionando seu primeiro cliente"}
               </p>
-              <Button size="sm" className="gap-2">
+              <Button size="sm" className="gap-2" onClick={() => setCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Novo Cliente
               </Button>
@@ -223,6 +224,11 @@ export function ClientsList() {
           )}
         </div>
       </main>
+
+      <CreateClientDialog 
+        open={createDialogOpen} 
+        onOpenChange={setCreateDialogOpen} 
+      />
     </div>
   );
 }

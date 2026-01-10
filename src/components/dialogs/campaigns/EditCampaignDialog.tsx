@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateCampaign, useDeleteCampaign } from '@/hooks/useCampaigns';
-import type { Database } from '@/types/database';
+import type { Database } from '@/integrations/supabase/types';
 import { Trash2 } from 'lucide-react';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
