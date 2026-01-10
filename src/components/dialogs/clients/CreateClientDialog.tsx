@@ -78,7 +78,10 @@ export function CreateClientDialog({ open, onOpenChange, agencyId }: CreateClien
     const onSubmit = async (data: FormData) => {
         try {
             await createClient.mutateAsync({
-                ...data,
+                name: data.name,
+                slug: data.slug,
+                niche: data.niche,
+                status: data.status,
                 agency_id: agencyId,
             });
 

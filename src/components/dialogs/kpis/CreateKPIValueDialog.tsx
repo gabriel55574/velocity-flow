@@ -68,7 +68,10 @@ export function CreateKPIValueDialog({
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             await createValue.mutateAsync({
-                ...values,
+                kpi_id: values.kpi_id,
+                value: values.value,
+                period_start: values.period_start,
+                period_end: values.period_end,
                 client_id: clientId,
             });
 

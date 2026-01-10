@@ -47,13 +47,11 @@ type Experiment = Database['public']['Tables']['experiments']['Row'];
 
 const formSchema = z.object({
     name: z.string().min(3, { message: 'Nome deve ter pelo menos 3 caracteres' }),
-    description: z.string().optional(),
     hypothesis: z.string().min(10, { message: 'Descreva a hipótese do experimento' }),
-    metrics: z.string().min(5, { message: 'Defina as métricas de sucesso' }),
-    status: z.enum(['draft', 'running', 'completed', 'cancelled']),
+    notes: z.string().optional(),
+    status: z.enum(['planned', 'running', 'completed', 'cancelled']),
     start_date: z.string().optional(),
     end_date: z.string().optional(),
-    notes: z.string().optional(),
 });
 
 interface EditExperimentDialogProps {
@@ -76,13 +74,11 @@ export function EditExperimentDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: experiment.name,
-            description: experiment.description || '',
             hypothesis: experiment.hypothesis || '',
-            metrics: experiment.metrics || '',
-            status: experiment.status as 'draft' | 'running' | 'completed' | 'cancelled',
+            notes: experiment.notes || '',
+            status: experiment.status as 'planned' | 'running' | 'completed' | 'cancelled',
             start_date: experiment.start_date || '',
             end_date: experiment.end_date || '',
-            notes: experiment.notes || '',
         },
     });
 
@@ -90,13 +86,11 @@ export function EditExperimentDialog({
         if (open && experiment) {
             form.reset({
                 name: experiment.name,
-                description: experiment.description || '',
                 hypothesis: experiment.hypothesis || '',
-                metrics: experiment.metrics || '',
-                status: experiment.status as 'draft' | 'running' | 'completed' | 'cancelled',
+                notes: experiment.notes || '',
+                status: experiment.status as 'planned' | 'running' | 'completed' | 'cancelled',
                 start_date: experiment.start_date || '',
                 end_date: experiment.end_date || '',
-                notes: experiment.notes || '',
             });
         }
     }, [open, experiment, form]);
@@ -105,7 +99,12 @@ export function EditExperimentDialog({
         try {
             await updateExperiment.mutateAsync({
                 id: experiment.id,
-                ...values,
+                name: values.name,
+                hypothesis: values.hypothesis,
+                notes: values.notes,
+                status: values.status,
+                start_date: values.start_date || null,
+                end_date: values.end_date || null,
             });
 
             toast({
@@ -182,7 +181,7 @@ export function EditExperimentDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="draft">Rascunho (Draft)</SelectItem>
+                                                <SelectItem value="planned">Planejado</SelectItem>
                                                 <SelectItem value="running">Em Execução</SelectItem>
                                                 <SelectItem value="completed">Concluído</SelectItem>
                                                 <SelectItem value="cancelled">Cancelado</SelectItem>
@@ -204,20 +203,6 @@ export function EditExperimentDialog({
                                                 className="min-h-[80px]"
                                                 {...field}
                                             />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="metrics"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Métricas de Sucesso</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

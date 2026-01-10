@@ -20,7 +20,6 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -48,9 +47,9 @@ type KPIDefinition = Database['public']['Tables']['kpi_definitions']['Row'];
 
 const formSchema = z.object({
     name: z.string().min(2, { message: 'Nome deve ter pelo menos 2 caracteres' }),
-    description: z.string().optional(),
+    key: z.string().min(2, { message: 'Chave deve ter pelo menos 2 caracteres' }),
     unit: z.string().min(1, { message: 'Unidade é obrigatória' }),
-    type: z.enum(['number', 'percentage', 'currency']),
+    target_direction: z.enum(['up', 'down']),
     is_default: z.boolean(),
 });
 
@@ -74,9 +73,9 @@ export function EditKPIDefinitionDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: kpi.name,
-            description: kpi.description || '',
-            unit: kpi.unit,
-            type: kpi.type as 'number' | 'percentage' | 'currency',
+            key: kpi.key,
+            unit: kpi.unit || '',
+            target_direction: (kpi.target_direction as 'up' | 'down') || 'up',
             is_default: kpi.is_default || false,
         },
     });
@@ -85,9 +84,9 @@ export function EditKPIDefinitionDialog({
         if (open && kpi) {
             form.reset({
                 name: kpi.name,
-                description: kpi.description || '',
-                unit: kpi.unit,
-                type: kpi.type as 'number' | 'percentage' | 'currency',
+                key: kpi.key,
+                unit: kpi.unit || '',
+                target_direction: (kpi.target_direction as 'up' | 'down') || 'up',
                 is_default: kpi.is_default || false,
             });
         }
@@ -97,7 +96,11 @@ export function EditKPIDefinitionDialog({
         try {
             await updateKPI.mutateAsync({
                 id: kpi.id,
-                ...values,
+                name: values.name,
+                key: values.key,
+                unit: values.unit,
+                target_direction: values.target_direction,
+                is_default: values.is_default,
             });
 
             toast({
@@ -160,10 +163,24 @@ export function EditKPIDefinitionDialog({
 
                             <FormField
                                 control={form.control}
-                                name="type"
+                                name="key"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Tipo de Dado</FormLabel>
+                                        <FormLabel>Chave (identificador)</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="target_direction"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Direção da Meta</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             defaultValue={field.value}
@@ -174,9 +191,8 @@ export function EditKPIDefinitionDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="number">Número</SelectItem>
-                                                <SelectItem value="currency">Moeda (R$)</SelectItem>
-                                                <SelectItem value="percentage">Porcentagem (%)</SelectItem>
+                                                <SelectItem value="up">Maior é melhor</SelectItem>
+                                                <SelectItem value="down">Menor é melhor</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -192,23 +208,6 @@ export function EditKPIDefinitionDialog({
                                         <FormLabel>Unidade / Símbolo</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Descrição (Opcional)</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                className="resize-none"
-                                                {...field}
-                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

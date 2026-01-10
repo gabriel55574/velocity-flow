@@ -1,7 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -18,54 +16,27 @@ import {
   NotesTab
 } from "@/components/workspace";
 import {
-  ArrowLeft,
   LayoutDashboard,
-  GitBranch,
   Target,
   Play,
   MessageSquare,
-  Image,
-  BarChart3,
   Database,
-  CheckSquare,
-  FolderOpen,
   FileText,
-  ChevronRight,
   Clock,
   AlertTriangle,
-  CheckCircle2,
   Calendar,
-  Loader2
-} from "lucide-react";
-import { useClient } from "@/hooks/useClients";
-
-const workspaceTabs = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "workflows", label: "Workflows", icon: GitBranch },
-  { id: "strategy", label: "Estratégia", icon: Target },
-  { id: "operations", label: "Operações", icon: Play },
-  { id: "crm", label: "CRM", icon: MessageSquare },
-  { id: "content", label: "Conteúdo", icon: Image },
-  { id: "media", label: "Mídia", icon: BarChart3 },
-  { id: "data", label: "Dados", icon: Database },
-  { id: "approvals", label: "Aprovações", icon: CheckSquare },
-  { id: "assets", label: "Ativos", icon: FolderOpen },
-  { id: "notes", label: "Notas", icon: FileText },
-];
-
-import { useCampaigns } from "@/hooks/useCampaigns";
-import { useLeads } from "@/hooks/useLeads";
-import { useState } from "react";
-import {
+  Loader2,
   Users,
   DollarSign,
   Activity,
   ChevronLeft,
-  LayoutDashboard as Layout,
   Share2,
-  Settings,
-  ArrowLeft
+  Settings
 } from "lucide-react";
+import { useClient } from "@/hooks/useClients";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { useLeads } from "@/hooks/useLeads";
+import { useState } from "react";
 
 export function ClientWorkspace() {
   const { id } = useParams();
@@ -106,7 +77,7 @@ export function ClientWorkspace() {
             </Button>
             <Button
               onClick={async () => {
-                const { supabase } = await import("@/lib/supabase");
+                const { supabase } = await import("@/integrations/supabase/client");
                 await supabase.auth.signOut();
                 navigate("/login");
               }}
@@ -187,7 +158,7 @@ export function ClientWorkspace() {
             </Button>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-primary/10">
-                <Layout className="h-5 w-5 text-primary" />
+                <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h1 className="font-bold text-lg">{client.name}</h1>
@@ -213,7 +184,7 @@ export function ClientWorkspace() {
           <div className="flex items-center justify-between gap-4">
             <TabsList className="bg-muted/50 p-1 rounded-xl">
               <TabsTrigger value="overview" className="rounded-lg gap-2">
-                <Layout className="h-4 w-4" /> Overview
+                <LayoutDashboard className="h-4 w-4" /> Overview
               </TabsTrigger>
               <TabsTrigger value="strategy" className="rounded-lg gap-2">
                 <Target className="h-4 w-4" /> Estratégia
