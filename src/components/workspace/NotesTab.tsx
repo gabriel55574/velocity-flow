@@ -102,7 +102,7 @@ export function NotesTab({ clientId }: NotesTabProps) {
     });
 
     const filteredNotes = notes?.filter(note =>
-        note.content?.toLowerCase().includes(searchQuery.toLowerCase())
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
 
     const noteCounts = {
