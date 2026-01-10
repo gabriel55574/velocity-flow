@@ -1,11 +1,15 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockTasks, mockUsers, Task } from "@/data/mockData";
-import { Play, CheckCircle2, Clock, AlertTriangle, Plus, User } from "lucide-react";
+import { Play, CheckCircle2, Clock, AlertTriangle, Plus, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTasks } from "@/hooks/useTasks";
+import { useUsers } from "@/hooks/useUsers";
+import { Database } from "@/types/database";
+
+type Task = Database["public"]["Tables"]["tasks"]["Row"];
 
 interface TaskCardProps {
-    task: Task;
+    task: any; // Using any for now to handle the joined user data from useTasks
 }
 
 function TaskCard({ task }: TaskCardProps) {
@@ -20,16 +24,16 @@ function TaskCard({ task }: TaskCardProps) {
         <div className="p-3 rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between gap-2 mb-2">
                 <p className="text-sm font-medium line-clamp-2">{task.title}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
-                    {task.priority}
+                <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority as keyof typeof priorityColors] || priorityColors.medium}`}>
+                    {task.priority || 'medium'}
                 </span>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    <span>{task.owner.name}</span>
+                    <span>{task.owner?.full_name || "Desconhecido"}</span>
                 </div>
-                <span>Vence: {new Date(task.dueAt).toLocaleDateString('pt-BR')}</span>
+                <span>Vence: {task.due_at ? new Date(task.due_at).toLocaleDateString('pt-BR') : 'N/A'}</span>
             </div>
         </div>
     );
@@ -38,7 +42,7 @@ function TaskCard({ task }: TaskCardProps) {
 interface KanbanColumnProps {
     title: string;
     status: 'todo' | 'doing' | 'done' | 'blocked';
-    tasks: Task[];
+    tasks: any[];
     icon: React.ElementType;
     color: string;
 }
@@ -67,9 +71,12 @@ function KanbanColumn({ title, status, tasks, icon: Icon, color }: KanbanColumnP
     );
 }
 
-export function OperationsTab() {
-    // Get tasks for the first client
-    const clientTasks = mockTasks;
+interface OperationsTabProps {
+    clientId: string;
+}
+
+export function OperationsTab({ clientId }: OperationsTabProps) {
+    const { data: tasks, isLoading: tasksLoading } = useTasks({ client_id: clientId });
 
     const columns = [
         {
@@ -98,6 +105,17 @@ export function OperationsTab() {
         },
     ];
 
+    if (tasksLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24">
+                <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+                <p className="text-sm text-muted-foreground">Carregando operações...</p>
+            </div>
+        );
+    }
+
+    const clientTasks = tasks || [];
+
     return (
         <div className="space-y-6">
             {/* Sprint Header */}
@@ -106,7 +124,7 @@ export function OperationsTab() {
                     <div className="flex items-center justify-between">
                         <GlassCardTitle className="flex items-center gap-2 text-base">
                             <Play className="h-5 w-5 text-primary" />
-                            Sprint Semanal - 06 a 12 Jan 2026
+                            Sprint Semanal
                         </GlassCardTitle>
                         <Button size="sm" className="gap-2">
                             <Plus className="h-4 w-4" />
@@ -158,7 +176,7 @@ export function OperationsTab() {
                 </div>
             </div>
 
-            {/* Weekly Routine Checklist */}
+            {/* Weekly Routine Checklist - Static for now */}
             <GlassCard>
                 <GlassCardHeader>
                     <GlassCardTitle className="text-base">
@@ -185,37 +203,6 @@ export function OperationsTab() {
                                     <p className="text-sm font-medium">{item.title}</p>
                                     <p className="text-xs text-muted-foreground">{item.day}</p>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </GlassCardContent>
-            </GlassCard>
-
-            {/* Sprint History */}
-            <GlassCard>
-                <GlassCardHeader>
-                    <GlassCardTitle className="text-base">
-                        Histórico de Sprints
-                    </GlassCardTitle>
-                </GlassCardHeader>
-                <GlassCardContent>
-                    <div className="space-y-3">
-                        {[
-                            { week: "30 Dez - 05 Jan", done: 8, total: 10, status: "ok" },
-                            { week: "23 - 29 Dez", done: 7, total: 8, status: "ok" },
-                            { week: "16 - 22 Dez", done: 5, total: 9, status: "warn" },
-                            { week: "09 - 15 Dez", done: 9, total: 10, status: "ok" },
-                        ].map((sprint, i) => (
-                            <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/30">
-                                <div className="flex-1">
-                                    <p className="font-medium text-sm">{sprint.week}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {sprint.done} de {sprint.total} tarefas ({Math.round((sprint.done / sprint.total) * 100)}%)
-                                    </p>
-                                </div>
-                                <StatusBadge status={sprint.status as "ok" | "warn" | "risk"} size="sm">
-                                    {sprint.status === "ok" ? "Bom" : "Atenção"}
-                                </StatusBadge>
                             </div>
                         ))}
                     </div>

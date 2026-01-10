@@ -15,6 +15,7 @@ type ClientUpdate = Database['public']['Tables']['clients']['Update'];
 
 interface ClientFilters {
     status?: Database['public']['Enums']['client_status'];
+    health?: 'good' | 'at_risk' | 'critical';
     agency_id?: string;
 }
 
@@ -35,6 +36,17 @@ export function useClients(filters?: ClientFilters) {
             }
             if (filters?.agency_id) {
                 query = query.eq('agency_id', filters.agency_id);
+            }
+
+            // Health Score Filters
+            if (filters?.health) {
+                if (filters.health === 'good') {
+                    query = query.gte('health_score', 80);
+                } else if (filters.health === 'at_risk') {
+                    query = query.gte('health_score', 50).lt('health_score', 80);
+                } else if (filters.health === 'critical') {
+                    query = query.lt('health_score', 50);
+                }
             }
 
             const { data, error } = await query.order('created_at', { ascending: false });

@@ -12,8 +12,11 @@ import type { Database } from '@/types/database';
 type Step = Database['public']['Tables']['steps']['Row'];
 type Gate = Database['public']['Tables']['gates']['Row'];
 type WorkflowInsert = Database['public']['Tables']['workflows']['Insert'];
+type WorkflowUpdate = Database['public']['Tables']['workflows']['Update'];
 type ModuleInsert = Database['public']['Tables']['modules']['Insert'];
+type ModuleUpdate = Database['public']['Tables']['modules']['Update'];
 type StepInsert = Database['public']['Tables']['steps']['Insert'];
+type StepUpdate = Database['public']['Tables']['steps']['Update'];
 
 // ============================================================================
 // WORKFLOWS
@@ -93,6 +96,50 @@ export function useCreateWorkflow() {
     });
 }
 
+// UPDATE - Update existing workflow
+export function useUpdateWorkflow() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: WorkflowUpdate & { id: string }) => {
+            const { data, error } = await supabase
+                .from('workflows')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+            if (data?.id) {
+                queryClient.invalidateQueries({ queryKey: ['workflows', data.id] });
+            }
+        }
+    });
+}
+
+// DELETE - Delete workflow
+export function useDeleteWorkflow() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('workflows')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+        }
+    });
+}
+
 // ============================================================================
 // MODULES
 // ============================================================================
@@ -141,6 +188,52 @@ export function useCreateModule() {
     });
 }
 
+// UPDATE - Update existing module
+export function useUpdateModule() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: ModuleUpdate & { id: string }) => {
+            const { data, error } = await supabase
+                .from('modules')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+            if (data?.workflow_id) {
+                queryClient.invalidateQueries({ queryKey: ['workflows', data.workflow_id] });
+            }
+        }
+    });
+}
+
+// DELETE - Delete module
+export function useDeleteModule() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('modules')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+        }
+    });
+}
+
 // ============================================================================
 // STEPS
 // ============================================================================
@@ -180,6 +273,54 @@ export function useCreateStep() {
 
             if (error) throw error;
             return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['steps'] });
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+        }
+    });
+}
+
+// UPDATE - Update existing step
+export function useUpdateStep() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: StepUpdate & { id: string }) => {
+            const { data, error } = await supabase
+                .from('steps')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['steps'] });
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+            if (data?.module_id) {
+                queryClient.invalidateQueries({ queryKey: ['steps', { module_id: data.module_id }] });
+            }
+        }
+    });
+}
+
+// DELETE - Delete step
+export function useDeleteStep() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('steps')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['steps'] });
@@ -244,6 +385,26 @@ export function useToggleChecklistItem() {
 
             if (error) throw error;
             return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['steps'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+        }
+    });
+}
+
+// DELETE CHECKLIST ITEM
+export function useDeleteChecklistItem() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('checklist_items')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['steps'] });
@@ -330,5 +491,117 @@ export function useBlockedGates() {
             if (error) throw error;
             return data;
         }
+    });
+}
+// ============================================================================
+// SPECIALIZED HOOKS FOR WORKSPACE TABS
+// ============================================================================
+
+export function useProjectModules(filters: { client_id: string }) {
+    return useQuery({
+        queryKey: ['project_modules', filters],
+        queryFn: async () => {
+            const { data: workspace } = await supabase
+                .from('workspaces')
+                .select('id')
+                .eq('client_id', filters.client_id)
+                .maybeSingle();
+
+            if (!workspace) return [];
+
+            const { data: workflow } = await supabase
+                .from('workflows')
+                .select('id')
+                .eq('workspace_id', workspace.id)
+                .limit(1)
+                .maybeSingle();
+
+            if (!workflow) return [];
+
+            const { data, error } = await supabase
+                .from('modules')
+                .select(`
+                    *,
+                    steps (*)
+                `)
+                .eq('workflow_id', workflow.id)
+                .order('order_index', { ascending: true });
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!filters.client_id
+    });
+}
+
+export function useTrackingChecklist(filters: { client_id: string }) {
+    return useQuery({
+        queryKey: ['tracking_checklist', filters],
+        queryFn: async () => {
+            const { data: workspace } = await supabase
+                .from('workspaces')
+                .select('id')
+                .eq('client_id', filters.client_id)
+                .maybeSingle();
+
+            if (!workspace) return [];
+
+            const { data, error } = await supabase
+                .from('steps')
+                .select(`
+                    *,
+                    module:modules!inner(*)
+                `)
+                .eq('module.workflow_id', (
+                    await supabase
+                        .from('workflows')
+                        .select('id')
+                        .eq('workspace_id', workspace.id)
+                        .limit(1)
+                        .maybeSingle()
+                ).data?.id)
+                .ilike('module.name', '%tracking%')
+                .order('order_index', { ascending: true });
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!filters.client_id
+    });
+}
+
+export function useAccessValidation(filters: { client_id: string }) {
+    return useQuery({
+        queryKey: ['access_validation', filters],
+        queryFn: async () => {
+            const { data: workspace } = await supabase
+                .from('workspaces')
+                .select('id')
+                .eq('client_id', filters.client_id)
+                .maybeSingle();
+
+            if (!workspace) return [];
+
+            const { data, error } = await supabase
+                .from('steps')
+                .select(`
+                    *,
+                    module:modules!inner(*)
+                `)
+                .eq('module.workflow_id', (
+                    await supabase
+                        .from('workflows')
+                        .select('id')
+                        .eq('workspace_id', workspace.id)
+                        .limit(1)
+                        .maybeSingle()
+                ).data?.id)
+                .ilike('module.name', '%acesso%')
+                .order('order_index', { ascending: true });
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!filters.client_id
     });
 }

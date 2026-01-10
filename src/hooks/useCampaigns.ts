@@ -133,15 +133,36 @@ export function useDeleteCampaign() {
     });
 }
 
-// UPDATE METRICS - Update campaign spent/budget
+// UPDATE METRICS - Update campaign performance data
 export function useUpdateCampaignMetrics() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, spent, budget }: { id: string; spent?: number; budget?: number }) => {
-            const updates: CampaignUpdate = {};
-            if (spent !== undefined) updates.spent = spent;
-            if (budget !== undefined) updates.budget = budget;
+        mutationFn: async ({
+            id,
+            spent,
+            budget,
+            impressions,
+            clicks,
+            conversions,
+            revenue
+        }: {
+            id: string;
+            spent?: number;
+            budget?: number;
+            impressions?: number;
+            clicks?: number;
+            conversions?: number;
+            revenue?: number;
+        }) => {
+            const updates: CampaignUpdate = {
+                spent,
+                budget,
+                impressions,
+                clicks,
+                conversions,
+                revenue
+            };
 
             const { data, error } = await supabase
                 .from('campaigns')
@@ -153,8 +174,11 @@ export function useUpdateCampaignMetrics() {
             if (error) throw error;
             return data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+            if (data?.id) {
+                queryClient.invalidateQueries({ queryKey: ['campaigns', data.id] });
+            }
         }
     });
 }

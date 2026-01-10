@@ -267,6 +267,25 @@ export function useToggleUserActive() {
     });
 }
 
+// DELETE - Delete user profile
+export function useDeleteUser() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('users_profile')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        }
+    });
+}
+
 // ============================================================================
 // ALIASES - For dialog compatibility
 // ============================================================================

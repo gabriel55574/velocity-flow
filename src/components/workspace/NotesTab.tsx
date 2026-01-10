@@ -1,5 +1,4 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
-import { mockNotes, Note } from "@/data/mockData";
 import {
     FileText,
     MessageSquare,
@@ -7,12 +6,15 @@ import {
     ClipboardList,
     Plus,
     Search,
-    User,
-    Calendar
+    User as UserIcon,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useNotes } from "@/hooks/useNotes";
+import { useCurrentUser } from "@/hooks/useUsers";
+import { CreateNoteDialog } from "@/components/dialogs/notes/CreateNoteDialog";
 
 const typeConfig = {
     note: {
@@ -36,11 +38,11 @@ const typeConfig = {
 };
 
 interface NoteCardProps {
-    note: Note;
+    note: any; // Using any for now to simplify with the combined query result
 }
 
 function NoteCard({ note }: NoteCardProps) {
-    const config = typeConfig[note.type];
+    const config = typeConfig[note.type as keyof typeof typeConfig] || typeConfig.note;
     const TypeIcon = config.icon;
 
     return (
@@ -55,7 +57,7 @@ function NoteCard({ note }: NoteCardProps) {
                             {config.label}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            {new Date(note.createdAt).toLocaleDateString('pt-BR', {
+                            {new Date(note.created_at).toLocaleDateString('pt-BR', {
                                 day: '2-digit',
                                 month: 'short',
                                 year: 'numeric',
@@ -66,8 +68,8 @@ function NoteCard({ note }: NoteCardProps) {
                     </div>
                     <p className="text-sm">{note.content}</p>
                     <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                        <User className="h-3 w-3" />
-                        <span>{note.createdBy.name}</span>
+                        <UserIcon className="h-3 w-3" />
+                        <span>{note.user?.full_name || 'Usuário desconhecido'}</span>
                     </div>
                 </div>
             </div>
@@ -75,21 +77,30 @@ function NoteCard({ note }: NoteCardProps) {
     );
 }
 
-export function NotesTab() {
+interface NotesTabProps {
+    clientId: string;
+}
+
+export function NotesTab({ clientId }: NotesTabProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<"all" | "note" | "decision" | "ata">("all");
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-    const filteredNotes = mockNotes.filter(note => {
-        const matchesSearch = note.content.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesType = filterType === "all" || note.type === filterType;
-        return matchesSearch && matchesType;
+    const { data: currentUser } = useCurrentUser();
+    const { data: notes, isLoading } = useNotes({
+        client_id: clientId,
+        type: filterType === "all" ? undefined : filterType
     });
 
+    const filteredNotes = notes?.filter(note =>
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+
     const noteCounts = {
-        all: mockNotes.length,
-        note: mockNotes.filter(n => n.type === "note").length,
-        decision: mockNotes.filter(n => n.type === "decision").length,
-        ata: mockNotes.filter(n => n.type === "ata").length,
+        all: notes?.length || 0,
+        note: notes?.filter(n => n.type === "note").length || 0,
+        decision: notes?.filter(n => n.type === "decision").length || 0,
+        ata: notes?.filter(n => n.type === "ata").length || 0,
     };
 
     return (
@@ -126,7 +137,12 @@ export function NotesTab() {
                         </div>
 
                         {/* Add Note */}
-                        <Button size="sm" className="gap-2">
+                        <Button
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => setIsCreateDialogOpen(true)}
+                            disabled={!currentUser}
+                        >
                             <Plus className="h-4 w-4" />
                             Nova Nota
                         </Button>
@@ -143,7 +159,12 @@ export function NotesTab() {
                     </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent className="space-y-4">
-                    {filteredNotes.length > 0 ? (
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+                            <p className="text-sm text-muted-foreground">Carregando notas...</p>
+                        </div>
+                    ) : filteredNotes.length > 0 ? (
                         filteredNotes.map((note) => (
                             <NoteCard key={note.id} note={note} />
                         ))
@@ -155,6 +176,16 @@ export function NotesTab() {
                     )}
                 </GlassCardContent>
             </GlassCard>
+
+            {currentUser && (
+                <CreateNoteDialog
+                    open={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                    clientId={clientId}
+                    agencyId={currentUser.agency_id}
+                    userId={currentUser.id}
+                />
+            )}
         </div>
     );
 }

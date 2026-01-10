@@ -1,19 +1,19 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
-import { mockCampaigns, Campaign } from "@/data/mockData";
 import {
     BarChart3,
-    TrendingUp,
-    TrendingDown,
     DollarSign,
     Users,
     Target,
-    Pause,
     Play,
-    Edit
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { Database } from "@/types/database";
+
+type Campaign = Database["public"]["Tables"]["campaigns"]["Row"];
 
 const platformColors = {
     meta: "bg-blue-500",
@@ -27,15 +27,20 @@ interface CampaignCardProps {
 
 function CampaignCard({ campaign }: CampaignCardProps) {
     const isActive = campaign.status === "active";
-    const budgetProgress = campaign.budgetDaily > 0
-        ? Math.min((campaign.spent / (campaign.budgetDaily * 7)) * 100, 100)
+    const budgetDaily = Number(campaign.budget) || 0;
+    const spentTotal = Number(campaign.spent) || 0;
+    const leadsCount = (campaign as any).conversions || 0;
+    const cpl = leadsCount > 0 ? spentTotal / leadsCount : 0;
+
+    const budgetProgress = budgetDaily > 0
+        ? Math.min((spentTotal / (budgetDaily * 7)) * 100, 100)
         : 0;
 
     return (
         <div className="p-4 rounded-xl border border-border/50 bg-card hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${platformColors[campaign.platform]}`} />
+                    <div className={`w-2 h-2 rounded-full ${platformColors[campaign.platform as keyof typeof platformColors] || platformColors.other}`} />
                     <span className="text-xs text-muted-foreground uppercase">
                         {campaign.platform}
                     </span>
@@ -49,15 +54,13 @@ function CampaignCard({ campaign }: CampaignCardProps) {
             </div>
 
             <h4 className="font-semibold text-sm mb-1">{campaign.name}</h4>
-            <p className="text-xs text-muted-foreground mb-3">{campaign.objective}</p>
-
             <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="p-2 rounded-lg bg-secondary/50">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                         <Users className="h-3 w-3" />
                         Leads
                     </div>
-                    <p className="font-bold">{campaign.leads}</p>
+                    <p className="font-bold">{leadsCount}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-secondary/50">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -65,7 +68,7 @@ function CampaignCard({ campaign }: CampaignCardProps) {
                         CPL
                     </div>
                     <p className="font-bold">
-                        {campaign.cpl > 0 ? `R$${campaign.cpl.toFixed(2)}` : "-"}
+                        {cpl > 0 ? `R$${cpl.toFixed(2)}` : "-"}
                     </p>
                 </div>
             </div>
@@ -73,10 +76,10 @@ function CampaignCard({ campaign }: CampaignCardProps) {
             <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                        Budget: R${campaign.budgetDaily}/dia
+                        Budget: R${budgetDaily}/dia
                     </span>
                     <span className="font-medium">
-                        Gasto: R${campaign.spent}
+                        Gasto: R${spentTotal.toFixed(2)}
                     </span>
                 </div>
                 <Progress value={budgetProgress} className="h-1.5" />
@@ -85,10 +88,25 @@ function CampaignCard({ campaign }: CampaignCardProps) {
     );
 }
 
-export function MediaTab() {
-    const activeCampaigns = mockCampaigns.filter(c => c.status === "active");
-    const totalSpent = mockCampaigns.reduce((acc, c) => acc + c.spent, 0);
-    const totalLeads = mockCampaigns.reduce((acc, c) => acc + c.leads, 0);
+interface MediaTabProps {
+    clientId: string;
+}
+
+export function MediaTab({ clientId }: MediaTabProps) {
+    const { data: campaigns, isLoading } = useCampaigns({ client_id: clientId });
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24">
+                <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+                <p className="text-sm text-muted-foreground">Carregando campanhas...</p>
+            </div>
+        );
+    }
+
+    const activeCampaigns = campaigns?.filter(c => c.status === "active") || [];
+    const totalSpent = campaigns?.reduce((acc, c) => acc + (Number(c.spent) || 0), 0) || 0;
+    const totalLeads = campaigns?.reduce((acc, c) => acc + ((c as any).conversions || 0), 0) || 0;
     const avgCPL = totalLeads > 0 ? totalSpent / totalLeads : 0;
 
     return (
@@ -101,7 +119,7 @@ export function MediaTab() {
                             <BarChart3 className="h-5 w-5 text-blue-500" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{mockCampaigns.length}</p>
+                            <p className="text-2xl font-bold">{campaigns?.length || 0}</p>
                             <p className="text-xs text-muted-foreground">Campanhas</p>
                         </div>
                     </div>
@@ -125,7 +143,7 @@ export function MediaTab() {
                             <DollarSign className="h-5 w-5 text-purple-500" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">R${totalSpent}</p>
+                            <p className="text-2xl font-bold">R${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                             <p className="text-xs text-muted-foreground">Investido</p>
                         </div>
                     </div>
@@ -158,11 +176,18 @@ export function MediaTab() {
                     </div>
                 </GlassCardHeader>
                 <GlassCardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                        {mockCampaigns.map((campaign) => (
-                            <CampaignCard key={campaign.id} campaign={campaign} />
-                        ))}
-                    </div>
+                    {campaigns && campaigns.length > 0 ? (
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {campaigns.map((campaign) => (
+                                <CampaignCard key={campaign.id} campaign={campaign} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                            <p>Nenhuma campanha encontrada para este cliente.</p>
+                        </div>
+                    )}
                 </GlassCardContent>
             </GlassCard>
         </div>

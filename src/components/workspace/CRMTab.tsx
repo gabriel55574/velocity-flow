@@ -1,6 +1,5 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockLeads, mockMessageTemplates, Lead } from "@/data/mockData";
 import {
     MessageSquare,
     Phone,
@@ -10,18 +9,25 @@ import {
     Globe,
     Users,
     MessageCircle,
-    Copy
+    Copy,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useLeads } from "@/hooks/useLeads";
+import { useMessageTemplates } from "@/hooks/useMessageTemplates";
+import { Database } from "@/types/database";
+
+type Lead = Database["public"]["Tables"]["crm_leads"]["Row"];
+type MessageTemplate = Database["public"]["Tables"]["message_templates"]["Row"];
 
 const stageConfig = {
-    new: { label: "Novo", color: "bg-blue-500" },
+    cold: { label: "Frio", color: "bg-blue-300" },
+    warm: { label: "Morno", color: "bg-orange-400" },
+    hot: { label: "Quente", color: "bg-red-500" },
     qualified: { label: "Qualificado", color: "bg-purple-500" },
-    scheduled: { label: "Agendado", color: "bg-amber-500" },
-    showed: { label: "Compareceu", color: "bg-emerald-500" },
+    proposal: { label: "Proposta", color: "bg-emerald-500" },
     closed: { label: "Fechado", color: "bg-green-600" },
-    lost: { label: "Perdido", color: "bg-red-500" },
 };
 
 const sourceIcons = {
@@ -37,7 +43,7 @@ interface LeadCardProps {
 }
 
 function LeadCard({ lead }: LeadCardProps) {
-    const SourceIcon = sourceIcons[lead.source] || Globe;
+    const SourceIcon = (sourceIcons[lead.source as keyof typeof sourceIcons] || Globe) as React.ElementType;
 
     return (
         <div className="p-3 rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all cursor-pointer">
@@ -62,7 +68,7 @@ function LeadCard({ lead }: LeadCardProps) {
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 <span>
-                    Último contato: {new Date(lead.lastContactAt).toLocaleDateString('pt-BR')}
+                    Atualizado: {lead.updated_at ? new Date(lead.updated_at).toLocaleDateString('pt-BR') : '-'}
                 </span>
             </div>
         </div>
@@ -100,18 +106,14 @@ function PipelineColumn({ stage, leads }: PipelineColumnProps) {
 }
 
 interface MessageTemplateCardProps {
-    template: {
-        id: string;
-        name: string;
-        category: string;
-        content: string;
-    };
+    template: MessageTemplate;
 }
 
 function MessageTemplateCard({ template }: MessageTemplateCardProps) {
     const { toast } = useToast();
 
     const copyToClipboard = () => {
+        if (!template.content) return;
         navigator.clipboard.writeText(template.content);
         toast({
             title: "Copiado!",
@@ -134,10 +136,26 @@ function MessageTemplateCard({ template }: MessageTemplateCardProps) {
     );
 }
 
-export function CRMTab() {
+interface CRMTabProps {
+    clientId: string;
+}
+
+export function CRMTab({ clientId }: CRMTabProps) {
+    const { data: leads, isLoading: leadsLoading } = useLeads({ client_id: clientId });
+    const { data: templates, isLoading: templatesLoading } = useMessageTemplates({ client_id: clientId });
+
     const stages: (keyof typeof stageConfig)[] = [
-        "new", "qualified", "scheduled", "showed", "closed", "lost"
+        "cold", "warm", "hot", "qualified", "proposal", "closed"
     ];
+
+    if (leadsLoading || templatesLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24">
+                <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
+                <p className="text-sm text-muted-foreground">Carregando dados do CRM...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -152,7 +170,7 @@ export function CRMTab() {
                 <GlassCardContent>
                     <div className="grid grid-cols-6 gap-2">
                         {stages.map((stage) => {
-                            const count = mockLeads.filter(l => l.stage === stage).length;
+                            const count = leads?.filter(l => l.stage === stage).length || 0;
                             const config = stageConfig[stage];
                             return (
                                 <div key={stage} className="text-center">
@@ -173,7 +191,7 @@ export function CRMTab() {
                         <PipelineColumn
                             key={stage}
                             stage={stage}
-                            leads={mockLeads.filter(l => l.stage === stage)}
+                            leads={leads?.filter(l => l.stage === stage) || []}
                         />
                     ))}
                 </div>
@@ -188,11 +206,18 @@ export function CRMTab() {
                     </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {mockMessageTemplates.map((template) => (
-                            <MessageTemplateCard key={template.id} template={template} />
-                        ))}
-                    </div>
+                    {templates && templates.length > 0 ? (
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {templates.map((template) => (
+                                <MessageTemplateCard key={template.id} template={template} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                            <p>Nenhum script encontrado para este cliente.</p>
+                        </div>
+                    )}
                 </GlassCardContent>
             </GlassCard>
         </div>
