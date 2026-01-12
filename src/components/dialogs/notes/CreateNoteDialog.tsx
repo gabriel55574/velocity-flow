@@ -68,6 +68,7 @@ export function CreateNoteDialog({
                 content: values.content,
                 client_id: clientId,
                 user_id: userId,
+                agency_id: agencyId,
             });
 
             toast({

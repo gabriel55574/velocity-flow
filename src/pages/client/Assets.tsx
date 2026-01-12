@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { ClientLayout } from "@/components/client-portal/ClientLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -20,9 +20,13 @@ import {
   MessageCircle,
   BarChart3
 } from "lucide-react";
-import { mockAssets, mockAccessChecklist } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAssets, useUpdateAsset } from "@/hooks/useAssets";
+import { useCurrentUser } from "@/hooks/useUsers";
+import { useUserClients } from "@/hooks/useClientAccess";
+import { useAccessValidation } from "@/hooks/useWorkflows";
+import { Loader2 } from "lucide-react";
 
 const assetTypeConfig = {
   logo: { icon: Image, label: 'Logo', description: 'Logo principal em alta resolução (PNG ou SVG)' },
@@ -44,32 +48,33 @@ const accessIcons: Record<string, typeof Instagram> = {
 
 export default function ClientAssets() {
   const { toast } = useToast();
-  const [assets, setAssets] = useState(mockAssets);
-  const [accesses, setAccesses] = useState(mockAccessChecklist);
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.id;
+  const { data: clientLinks } = useUserClients(userId || "");
+  const clientId = useMemo(() => clientLinks?.[0]?.client_id, [clientLinks]);
+  const { data: assets, isLoading: assetsLoading } = useAssets(clientId ? { client_id: clientId } : undefined);
+  const { data: accessChecklist, isLoading: accessLoading } = useAccessValidation({ client_id: clientId || "" });
+  const updateAsset = useUpdateAsset();
 
-  const uploadedCount = assets.filter(a => a.status !== 'missing').length;
-  const validatedCount = assets.filter(a => a.status === 'validated').length;
-  const totalAssets = assets.length;
+  const uploadedCount = (assets || []).filter(a => (a.status || 'missing') !== 'missing').length;
+  const validatedCount = (assets || []).filter(a => a.status === 'validated').length;
+  const totalAssets = assets?.length || 0;
 
-  const accessValidatedCount = accesses.filter(a => a.status === 'validated').length;
-  const totalAccesses = accesses.length;
+  const accessValidatedCount = (accessChecklist || []).filter(a => a.status === 'done').length;
+  const totalAccesses = accessChecklist?.length || 0;
 
-  const handleUpload = (assetId: string) => {
-    setAssets(prev => prev.map(a => 
-      a.id === assetId ? { ...a, status: 'uploaded' as const } : a
-    ));
+  const handleUpload = async (assetId: string) => {
+    if (!assetId) return;
+    await updateAsset.mutateAsync({ id: assetId, status: 'uploaded' });
     toast({
-      title: "Arquivo enviado! 📁",
-      description: "A equipe irá validar em breve.",
+      title: "Upload registrado",
+      description: "A equipe será notificada para validar o arquivo.",
     });
   };
 
-  const handleAccessSubmit = (accessId: string) => {
-    setAccesses(prev => prev.map(a => 
-      a.id === accessId ? { ...a, status: 'validated' as const } : a
-    ));
+  const handleAccessSubmit = () => {
     toast({
-      title: "Acesso registrado! 🔑",
+      title: "Acesso enviado",
       description: "A equipe irá validar a conexão.",
     });
   };
@@ -90,6 +95,15 @@ export default function ClientAssets() {
   return (
     <ClientLayout>
       <div className="space-y-6">
+        {(assetsLoading || accessLoading) && (
+          <GlassCard>
+            <GlassCardContent className="p-6 flex items-center justify-center gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Sincronizando ativos...
+            </GlassCardContent>
+          </GlassCard>
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Ativos e Acessos</h1>
@@ -104,7 +118,7 @@ export default function ClientAssets() {
                 <span className="text-sm font-medium">Ativos Enviados</span>
                 <span className="text-sm text-muted-foreground">{uploadedCount}/{totalAssets}</span>
               </div>
-              <Progress value={(uploadedCount / totalAssets) * 100} className="h-2 mb-2" />
+              <Progress value={totalAssets ? (uploadedCount / totalAssets) * 100 : 0} className="h-2 mb-2" />
               <p className="text-xs text-muted-foreground">{validatedCount} validados pela equipe</p>
             </GlassCardContent>
           </GlassCard>
@@ -115,7 +129,7 @@ export default function ClientAssets() {
                 <span className="text-sm font-medium">Acessos Configurados</span>
                 <span className="text-sm text-muted-foreground">{accessValidatedCount}/{totalAccesses}</span>
               </div>
-              <Progress value={(accessValidatedCount / totalAccesses) * 100} className="h-2 mb-2" />
+              <Progress value={totalAccesses ? (accessValidatedCount / totalAccesses) * 100 : 0} className="h-2 mb-2" />
               <p className="text-xs text-muted-foreground">{totalAccesses - accessValidatedCount} pendentes</p>
             </GlassCardContent>
           </GlassCard>
@@ -158,9 +172,17 @@ export default function ClientAssets() {
 
             {/* Asset Types */}
             <div className="space-y-3">
-              {assets.map((asset) => {
+              {(assets || []).length === 0 && (
+                <GlassCard>
+                  <GlassCardContent className="p-8 text-center text-muted-foreground">
+                    Nenhum ativo enviado ainda.
+                  </GlassCardContent>
+                </GlassCard>
+              )}
+
+              {(assets || []).map((asset) => {
                 const config = assetTypeConfig[asset.type as keyof typeof assetTypeConfig];
-                const statusConfig = getStatusConfig(asset.status);
+                const statusConfig = getStatusConfig(asset.status || 'missing');
                 const Icon = config?.icon || FileText;
                 const StatusIcon = statusConfig.icon;
 
@@ -170,15 +192,15 @@ export default function ClientAssets() {
                       <div className="flex items-center gap-4">
                         <div className={cn(
                           "w-12 h-12 rounded-lg flex items-center justify-center",
-                          asset.status === 'missing' ? "bg-risk/10" : "bg-muted/50"
+                          (asset.status || 'missing') === 'missing' ? "bg-risk/10" : "bg-muted/50"
                         )}>
                           <Icon className={cn(
                             "h-6 w-6",
-                            asset.status === 'missing' ? "text-risk" : "text-muted-foreground"
+                            (asset.status || 'missing') === 'missing' ? "text-risk" : "text-muted-foreground"
                           )} />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-foreground">{asset.title}</h3>
+                          <h3 className="font-medium text-foreground">{asset.name}</h3>
                           <p className="text-xs text-muted-foreground">{config?.description}</p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -186,7 +208,7 @@ export default function ClientAssets() {
                             <StatusIcon className="h-4 w-4" />
                             <span className="text-sm">{statusConfig.label}</span>
                           </div>
-                          {asset.status === 'missing' && (
+                          {(asset.status || 'missing') === 'missing' && (
                             <Button size="sm" onClick={() => handleUpload(asset.id)}>
                               Enviar
                             </Button>
@@ -211,44 +233,48 @@ export default function ClientAssets() {
                   Clique em cada item para ver as instruções.
                 </p>
 
-                {accesses.map((access) => {
-                  const statusConfig = getStatusConfig(access.status);
-                  const Icon = accessIcons[access.title] || Key;
+                {(accessChecklist || []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma pendência de acesso.</p>
+                )}
+
+                {(accessChecklist || []).map((access) => {
+                  const statusConfig = getStatusConfig(access.status === 'done' ? 'validated' : 'missing');
+                  const Icon = accessIcons[access.name] || Key;
 
                   return (
                     <div 
                       key={access.id}
                       className={cn(
                         "flex items-center gap-4 p-4 rounded-lg border transition-colors",
-                        access.status === 'validated' 
+                        access.status === 'done' 
                           ? "bg-ok/5 border-ok/20" 
-                          : access.status === 'pending'
+                          : access.status === 'in_progress' || access.status === 'doing'
                           ? "bg-warn/5 border-warn/20"
                           : "bg-muted/30 border-transparent"
                       )}
                     >
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
-                        access.status === 'validated' ? "bg-ok/10" : "bg-muted/50"
+                        access.status === 'done' ? "bg-ok/10" : "bg-muted/50"
                       )}>
                         <Icon className={cn(
                           "h-5 w-5",
-                          access.status === 'validated' ? "text-ok" : "text-muted-foreground"
+                          access.status === 'done' ? "text-ok" : "text-muted-foreground"
                         )} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-foreground">{access.title}</h3>
-                        {access.status === 'pending' && (
+                        <h3 className="font-medium text-foreground">{access.name}</h3>
+                        {access.status !== 'done' && (
                           <p className="text-xs text-warn">Aguardando configuração</p>
                         )}
                       </div>
-                      {access.status === 'validated' ? (
+                      {access.status === 'done' ? (
                         <CheckCircle className="h-5 w-5 text-ok" />
                       ) : (
                         <Button 
                           size="sm" 
                           variant={access.status === 'pending' ? 'default' : 'outline'}
-                          onClick={() => handleAccessSubmit(access.id)}
+                          onClick={() => handleAccessSubmit()}
                         >
                           {access.status === 'pending' ? 'Configurar' : 'Validar'}
                         </Button>

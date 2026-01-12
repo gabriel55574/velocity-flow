@@ -110,7 +110,7 @@ export function ClientsList() {
 
       <main className="flex-1 p-4 md:p-6 space-y-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard className="p-3 text-center">
             <p className="text-2xl font-bold">{stats.total}</p>
             <p className="text-xs text-muted-foreground">Total</p>
@@ -130,7 +130,7 @@ export function ClientsList() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col lg:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -141,8 +141,8 @@ export function ClientsList() {
             />
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-            <div className="flex gap-1.5 p-1 bg-secondary/50 rounded-xl">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-wrap gap-1.5 p-1 bg-secondary/50 rounded-xl">
               {phases.map((phase) => (
                 <Button
                   key={phase}
@@ -159,7 +159,7 @@ export function ClientsList() {
               ))}
             </div>
 
-            <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl">
+            <div className="flex gap-1 p-1 bg-secondary/50 rounded-xl sm:ml-auto">
               <Button
                 variant="ghost"
                 size="icon"

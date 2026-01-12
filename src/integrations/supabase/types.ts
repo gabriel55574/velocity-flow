@@ -122,6 +122,7 @@ export type Database = {
           id: string
           metadata: Json | null
           name: string
+          status: Database["public"]["Enums"]["asset_status"] | null
           type: Database["public"]["Enums"]["asset_type"] | null
           url: string | null
         }
@@ -132,6 +133,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name: string
+          status?: Database["public"]["Enums"]["asset_status"] | null
           type?: Database["public"]["Enums"]["asset_type"] | null
           url?: string | null
         }
@@ -142,6 +144,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name?: string
+          status?: Database["public"]["Enums"]["asset_status"] | null
           type?: Database["public"]["Enums"]["asset_type"] | null
           url?: string | null
         }
@@ -362,6 +365,58 @@ export type Database = {
           {
             foreignKeyName: "clients_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_notes: {
+        Row: {
+          agency_id: string
+          client_id: string
+          content: string
+          created_at: string
+          id: string
+          type: Database["public"]["Enums"]["note_type"]
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          content: string
+          created_at?: string
+          id?: string
+          type?: Database["public"]["Enums"]["note_type"]
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          type?: Database["public"]["Enums"]["note_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users_profile"
             referencedColumns: ["id"]
@@ -996,6 +1051,7 @@ export type Database = {
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected" | "revision"
+      asset_status: "missing" | "uploaded" | "validated"
       asset_type: "image" | "video" | "document" | "link" | "credential"
       campaign_status: "draft" | "active" | "paused" | "completed"
       channel_type: "whatsapp" | "email" | "sms"
@@ -1012,6 +1068,7 @@ export type Database = {
       experiment_status: "planned" | "running" | "completed" | "cancelled"
       gate_status: "pending" | "passed" | "failed" | "blocked"
       lead_stage: "cold" | "warm" | "hot" | "qualified" | "proposal" | "closed"
+      note_type: "note" | "decision" | "ata"
       platform_type: "meta" | "google" | "tiktok" | "other"
       priority_level: "low" | "medium" | "high" | "urgent"
       task_status: "backlog" | "todo" | "doing" | "review" | "done" | "blocked"

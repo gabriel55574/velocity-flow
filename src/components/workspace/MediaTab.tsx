@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCampaigns } from "@/hooks/useCampaigns";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/database";
+import { formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
+import { useState } from "react";
+import { CreateCampaignDialog, EditCampaignDialog } from "@/components/dialogs";
 
 type Campaign = Database["public"]["Tables"]["campaigns"]["Row"];
 
@@ -23,9 +26,10 @@ const platformColors = {
 
 interface CampaignCardProps {
     campaign: Campaign;
+    onClick?: () => void;
 }
 
-function CampaignCard({ campaign }: CampaignCardProps) {
+function CampaignCard({ campaign, onClick }: CampaignCardProps) {
     const isActive = campaign.status === "active";
     const budgetDaily = Number(campaign.budget) || 0;
     const spentTotal = Number(campaign.spent) || 0;
@@ -37,7 +41,17 @@ function CampaignCard({ campaign }: CampaignCardProps) {
         : 0;
 
     return (
-        <div className="p-4 rounded-xl border border-border/50 bg-card hover:shadow-lg transition-shadow">
+        <div
+            className="p-4 rounded-xl border border-border/50 bg-card hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={onClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    onClick?.();
+                }
+            }}
+        >
             <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${platformColors[campaign.platform as keyof typeof platformColors] || platformColors.other}`} />
@@ -94,6 +108,9 @@ interface MediaTabProps {
 
 export function MediaTab({ clientId }: MediaTabProps) {
     const { data: campaigns, isLoading } = useCampaigns({ client_id: clientId });
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
     if (isLoading) {
         return (
@@ -108,18 +125,22 @@ export function MediaTab({ clientId }: MediaTabProps) {
     const totalSpent = campaigns?.reduce((acc, c) => acc + (Number(c.spent) || 0), 0) || 0;
     const totalLeads = campaigns?.reduce((acc, c) => acc + ((c as any).conversions || 0), 0) || 0;
     const avgCPL = totalLeads > 0 ? totalSpent / totalLeads : 0;
+    const campaignsCount = campaigns?.length || 0;
 
     return (
         <div className="space-y-6">
             {/* Summary */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <GlassCard className="p-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-blue-500/10">
                             <BarChart3 className="h-5 w-5 text-blue-500" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{campaigns?.length || 0}</p>
+                            <p className="text-2xl font-bold">
+                                <span className="sm:hidden">{formatCompactNumber(campaignsCount)}</span>
+                                <span className="hidden sm:inline">{campaignsCount}</span>
+                            </p>
                             <p className="text-xs text-muted-foreground">Campanhas</p>
                         </div>
                     </div>
@@ -143,7 +164,10 @@ export function MediaTab({ clientId }: MediaTabProps) {
                             <DollarSign className="h-5 w-5 text-purple-500" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">R${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            <p className="text-2xl font-bold">
+                                <span className="sm:hidden">{formatCompactCurrency(totalSpent)}</span>
+                                <span className="hidden sm:inline">R${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            </p>
                             <p className="text-xs text-muted-foreground">Investido</p>
                         </div>
                     </div>
@@ -155,7 +179,10 @@ export function MediaTab({ clientId }: MediaTabProps) {
                             <Target className="h-5 w-5 text-amber-500" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">R${avgCPL.toFixed(2)}</p>
+                            <p className="text-2xl font-bold">
+                                <span className="sm:hidden">{formatCompactCurrency(avgCPL)}</span>
+                                <span className="hidden sm:inline">R${avgCPL.toFixed(2)}</span>
+                            </p>
                             <p className="text-xs text-muted-foreground">CPL Médio</p>
                         </div>
                     </div>
@@ -165,12 +192,12 @@ export function MediaTab({ clientId }: MediaTabProps) {
             {/* Campaigns Grid */}
             <GlassCard>
                 <GlassCardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <GlassCardTitle className="flex items-center gap-2 text-base">
                             <BarChart3 className="h-5 w-5 text-primary" />
                             Campanhas
                         </GlassCardTitle>
-                        <Button size="sm">
+                        <Button size="sm" onClick={() => setIsCreateOpen(true)}>
                             Nova Campanha
                         </Button>
                     </div>
@@ -179,7 +206,14 @@ export function MediaTab({ clientId }: MediaTabProps) {
                     {campaigns && campaigns.length > 0 ? (
                         <div className="grid md:grid-cols-2 gap-4">
                             {campaigns.map((campaign) => (
-                                <CampaignCard key={campaign.id} campaign={campaign} />
+                                <CampaignCard
+                                    key={campaign.id}
+                                    campaign={campaign}
+                                    onClick={() => {
+                                        setSelectedCampaign(campaign);
+                                        setIsEditOpen(true);
+                                    }}
+                                />
                             ))}
                         </div>
                     ) : (
@@ -190,6 +224,20 @@ export function MediaTab({ clientId }: MediaTabProps) {
                     )}
                 </GlassCardContent>
             </GlassCard>
+
+            <CreateCampaignDialog
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+                clientId={clientId}
+            />
+            <EditCampaignDialog
+                open={isEditOpen}
+                onOpenChange={(open) => {
+                    setIsEditOpen(open);
+                    if (!open) setSelectedCampaign(null);
+                }}
+                campaign={selectedCampaign}
+            />
         </div>
     );
 }

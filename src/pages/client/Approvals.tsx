@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ClientLayout } from "@/components/client-portal/ClientLayout";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
+import { GlassCard, GlassCardContent } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,39 +15,55 @@ import {
   ClipboardList,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from "lucide-react";
-import { mockApprovals } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useApprovals, useApproveItem, useRejectItem } from "@/hooks/useApprovals";
+import { useCurrentUser } from "@/hooks/useUsers";
+import { useUserClients } from "@/hooks/useClientAccess";
 
-const typeIcons = {
+const typeIcons: Record<string, React.ElementType> = {
   creative: Image,
   copy: FileText,
   budget: DollarSign,
   plan: ClipboardList,
+  strategy: ClipboardList,
+  report: FileText,
+  other: FileText,
 };
 
-const typeLabels = {
+const typeLabels: Record<string, string> = {
   creative: 'Criativo',
   copy: 'Copy',
   budget: 'Orçamento',
   plan: 'Plano',
+  strategy: 'Estratégia',
+  report: 'Relatório',
+  other: 'Outro',
 };
 
 export default function ClientApprovals() {
   const { toast } = useToast();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [approvals, setApprovals] = useState(mockApprovals);
+  const { data: currentUser } = useCurrentUser();
+  const userId = currentUser?.id;
+  const { data: clientLinks } = useUserClients(userId || "");
+  const clientId = useMemo(() => clientLinks?.[0]?.client_id, [clientLinks]);
+  const { data: approvalsData, isLoading, error: approvalsError } = useApprovals(clientId ? { client_id: clientId } : undefined);
+  const approveMutation = useApproveItem();
+  const rejectMutation = useRejectItem();
 
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
+
+  const approvals = clientId ? approvalsData || [] : [];
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const decidedApprovals = approvals.filter(a => a.status !== 'pending');
 
-  const handleApprove = (id: string) => {
-    setApprovals(prev => prev.map(a => 
-      a.id === id ? { ...a, status: 'approved' as const } : a
-    ));
+  const handleApprove = async (id: string) => {
+    if (!currentUser) return;
+    await approveMutation.mutateAsync({ id, reviewer_id: currentUser.id });
     toast({
       title: "Aprovado! ✅",
       description: "O item foi aprovado e a equipe será notificada.",
@@ -55,8 +71,11 @@ export default function ClientApprovals() {
     setExpandedId(null);
   };
 
-  const handleReject = (id: string) => {
-    if (!rejectionReason.trim()) {
+  const handleReject = async (id: string) => {
+    if (!currentUser) return;
+    const reason = rejectionReason[id]?.trim() || "";
+
+    if (!reason) {
       toast({
         title: "Motivo obrigatório",
         description: "Por favor, informe o motivo da reprovação.",
@@ -65,18 +84,17 @@ export default function ClientApprovals() {
       return;
     }
 
-    setApprovals(prev => prev.map(a => 
-      a.id === id ? { ...a, status: 'rejected' as const } : a
-    ));
+    await rejectMutation.mutateAsync({ id, reviewer_id: currentUser.id, feedback: reason });
     toast({
       title: "Reprovado",
       description: "O feedback foi enviado para a equipe.",
     });
     setExpandedId(null);
-    setRejectionReason('');
+    setRejectionReason((prev) => ({ ...prev, [id]: '' }));
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "—";
     return new Date(dateStr).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -85,7 +103,8 @@ export default function ClientApprovals() {
     });
   };
 
-  const getSLAStatus = (slaDueAt: string) => {
+  const getSLAStatus = (slaDueAt?: string | null) => {
+    if (!slaDueAt) return { label: 'Sem SLA', color: 'text-muted-foreground' };
     const now = new Date();
     const due = new Date(slaDueAt);
     const hoursLeft = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -95,9 +114,41 @@ export default function ClientApprovals() {
     return { label: `${Math.round(hoursLeft / 24)}d restantes`, color: 'text-muted-foreground' };
   };
 
+  const getRequesterLabel = (requesterId?: string | null) => {
+    if (!requesterId) return "Equipe";
+    return `ID ${requesterId.slice(0, 6)}`;
+  };
+
   return (
     <ClientLayout>
       <div className="space-y-6">
+        {!clientId && (
+          <GlassCard>
+            <GlassCardContent className="p-6 text-center text-muted-foreground">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p>Não encontramos um workspace associado a este usuário.</p>
+            </GlassCardContent>
+          </GlassCard>
+        )}
+
+        {isLoading && (
+          <GlassCard>
+            <GlassCardContent className="p-8 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">Carregando aprovações...</p>
+            </GlassCardContent>
+          </GlassCard>
+        )}
+
+        {approvalsError && (
+          <GlassCard>
+            <GlassCardContent className="p-6 text-center text-muted-foreground">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p>Erro ao carregar aprovações. Tente novamente.</p>
+            </GlassCardContent>
+          </GlassCard>
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Aprovações</h1>
@@ -152,8 +203,8 @@ export default function ClientApprovals() {
               </GlassCard>
             ) : (
               pendingApprovals.map((approval) => {
-                const Icon = typeIcons[approval.type];
-                const sla = getSLAStatus(approval.slaDueAt);
+                const Icon = typeIcons[approval.type] || FileText;
+                const sla = getSLAStatus(approval.due_date);
                 const isExpanded = expandedId === approval.id;
 
                 return (
@@ -177,7 +228,9 @@ export default function ClientApprovals() {
                               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{approval.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {approval.description || "Sem descrição"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -194,7 +247,7 @@ export default function ClientApprovals() {
 
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          Solicitado em {formatDate(approval.requestedAt)} por {approval.requestedBy.name}
+                          Solicitado em {formatDate(approval.created_at)} por {getRequesterLabel(approval.requester_id)}
                         </div>
 
                         {/* Rejection reason input */}
@@ -202,8 +255,8 @@ export default function ClientApprovals() {
                           <label className="text-sm font-medium">Motivo da reprovação (se aplicável):</label>
                           <Textarea 
                             placeholder="Ex: Precisa ajustar a cor do fundo, não combina com a identidade visual..."
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
+                            value={rejectionReason[approval.id] || ''}
+                            onChange={(e) => setRejectionReason((prev) => ({ ...prev, [approval.id]: e.target.value }))}
                             className="bg-white/50"
                           />
                         </div>
@@ -243,7 +296,7 @@ export default function ClientApprovals() {
               </GlassCard>
             ) : (
               decidedApprovals.map((approval) => {
-                const Icon = typeIcons[approval.type];
+                const Icon = typeIcons[approval.type] || FileText;
                 return (
                   <GlassCard key={approval.id}>
                     <GlassCardContent className="p-4">

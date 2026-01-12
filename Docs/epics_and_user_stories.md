@@ -9,9 +9,14 @@
 ## ⚠️ PRIORIDADE ABSOLUTA: USABILIDADE
 
 > [!CAUTION]
-> **O sistema atualmente NÃO possui CRUD funcional em nenhuma entidade.**  
-> Todos os dados vêm de `mockData.ts`. Sem CRUD, o sistema não é usável.  
-> O **Epic 0** deve ser implementado PRIMEIRO antes de qualquer outra funcionalidade.
+> **O CRUD básico já existe nas entidades principais**, porém ainda há lacunas críticas  
+> (Storage de assets/aprovações, gestão de acessos, workflows/gates e KPIs/experimentos).  
+> O **Epic 0** deve ser concluído antes de qualquer outra funcionalidade.
+
+### Checklist de Responsividade (Usabilidade)
+- [x] Clients (grid/filters responsivos)
+- [x] Client Detail (workspace/tabs responsivos)
+- [x] Configuracoes (tabs/listas responsivas)
 
 ---
 
@@ -23,7 +28,7 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 
 | # | Epic | Descrição | Status | Prioridade |
 |---|------|-----------|--------|------------|
-| **E0** | **CRUD Fundamental** | **Operações básicas para todas entidades** | **⚠️ 75%** | **P0 CRÍTICO** |
+| **E0** | **CRUD Fundamental** | **Operações básicas para todas entidades** | **⚠️ 80%** | **P0 CRÍTICO** |
 | E1 | Autenticação e Usuários | Login, roles, permissões | ⚠️ 20% | P0 |
 | E2 | Gestão de Clientes | CRUD clientes, workspaces | ⚠️ 70% | P0 |
 | E3 | Workflow Engine | Módulos, steps, gates, DoD | ⚠️ 30% | P0 |
@@ -41,26 +46,46 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 
 ## 🟡 Epic 0: CRUD Fundamental (EM PROGRESSO)
 
-> **Status:** ⚠️ 75%  
+> **Status:** ⚠️ 80%  
 > **Prioridade:** P0 — MÁXIMA  
-> **Descrição:** Hooks Supabase e Dialogs P0+P1 implementados. Falta integração, P2 e migração de mocks.
+> **Descrição:** Hooks e dialogs P0/P1 integrados nas principais abas.  
+> **Cobertura PDR §11.2–11.5 (escopo Epic 0):** multi-tenant com `agency_id`/`client_id` em todas as entidades do §11.3 (agencies, users_profile, clients, clients_users, workspaces, workflows/modules/steps/checklist_items/gates, tasks, approvals, assets, crm_leads, message_templates, experiments, campaigns/creatives, kpi_definitions/values, audit_logs, client_notes) e Storage com buckets `assets-public`, `assets-private`, `approvals` usando path `{agency_id}/{client_id}/{type}/{filename}`.  
+> **Pendências críticas:** Storage (assets/aprovações), gestão de acesso ao portal (clients_users), CRUD de workflows/gates/steps (UI), KPIs/experimentos (UI) e auditoria (UI).
 
 ### O Que Precisa de CRUD
 
 | Entidade | Hook | Create | Read | Update | Delete | Dialog | Status |
 |----------|:----:|:------:|:----:|:------:|:------:|:------:|--------|
-| **Clients** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
-| **Tasks** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
-| **Leads (CRM)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
-| **Approvals** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
+| **Agencies** | ✅ | — | ✅ | ✅ | — | ❌ | **40%** |
+| **Users** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
+| **Clients** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
+| **Client Access (clients_users)** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ⚠️ | **50%** |
+| **Workspaces** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
+| **Workflows/Modules/Steps/Gates/Checklist Items** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
+| **Tasks** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
+| **Approvals** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **90%** |
 | **Assets** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
-| **Creatives** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P1 | **40%** |
-| **Campaigns** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P1 | **40%** |
-| **Message Templates** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P1 | **40%** |
-| **Users** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P1 | **40%** |
-| **Workflows** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P1 | **40%** |
-| **KPIs** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
+| **Leads (CRM)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
+| **Message Templates** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
+| **Campaigns** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
+| **Creatives** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
+| **Notes (client_notes)** | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | **60%** |
+| **KPIs (definitions/values)** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
 | **Experiments** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
+| **Audit Logs** | ✅ | — | ✅ | — | — | ❌ | **20%** |
+
+Legenda: **—** = não aplicável (seed/manual/backoffice).
+
+### Pendências do Epic 0 (PDR §11.3)
+- [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets + policies)
+- [ ] Confirmar multi-tenant nas telas (RLS já cobre): todas as queries/hooks devem enviar `agency_id`/`client_id` corretos
+- [ ] UI de acesso ao portal (clients_users) e integração do `GrantAccessDialog`
+- [ ] CRUD básico de workspaces/workflows/modules/steps/gates/checklist_items (UI)
+- [ ] UI de gates com `gate_status` (pending/passed/failed/blocked) e condições DoD (JSON)
+- [ ] UI mínima para KPIs e Experiments (listagem/edição)
+- [ ] Audit logs: tela read-only para consulta
+- [ ] `client_notes`: garantir migration + editar/excluir notas
+- [ ] Aplicar migrations pendentes (`20260109_add_client_notes.sql`, `20260110_add_asset_status.sql`)
 
 ### US 0.1 — Hooks Supabase por Entidade ✅ COMPLETO
 
@@ -68,34 +93,40 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 **Quero** ter hooks TanStack Query para cada entidade,  
 **Para que** qualquer componente possa fazer CRUD.
 
-**Status:** ✅ 17 hooks implementados cobrindo 21 tabelas
+**Status:** ✅ 17 hooks implementados cobrindo as tabelas do PDR  
+**Nota:** `client_notes` precisa existir na migration para o hook `useNotes` funcionar.
 
-**Hooks a criar:**
+**Hooks (mapeados ao PDR §11.3):**
 
 ```
 src/hooks/
-├── useClients.ts        # CRUD clients + workspace
-├── useTasks.ts          # CRUD tasks
-├── useLeads.ts          # CRUD crm_leads
-├── useApprovals.ts      # CRUD approvals
-├── useAssets.ts         # CRUD assets
-├── useCreatives.ts      # CRUD creatives
-├── useCampaigns.ts      # CRUD campaigns
-├── useTemplates.ts      # CRUD message_templates
+├── useAgency.ts         # GET/UPDATE agencies
 ├── useUsers.ts          # CRUD users_profile
-├── useNotes.ts          # CRUD notes (se tabela existir)
-├── useWorkflows.ts      # CRUD workflows + modules + steps
-└── useKPIs.ts           # Read kpi_values
+├── useClients.ts        # CRUD clients + workspace
+├── useClientAccess.ts   # CRUD clients_users (access)
+├── useWorkspaces.ts     # CRUD workspaces
+├── useWorkflows.ts      # CRUD workflows + modules + steps + gates + checklist_items
+├── useTasks.ts          # CRUD tasks
+├── useApprovals.ts      # CRUD approvals
+├── useAssets.ts         # CRUD assets + storage
+├── useLeads.ts          # CRUD crm_leads
+├── useMessageTemplates.ts # CRUD message_templates
+├── useCampaigns.ts      # CRUD campaigns
+├── useCreatives.ts      # CRUD creatives
+├── useKPIs.ts           # CRUD kpi_definitions + kpi_values
+├── useExperiments.ts    # CRUD experiments
+├── useAuditLogs.ts      # Read-only audit_logs
+└── useNotes.ts          # CRUD client_notes (validar tabela)
 ```
 
 **Critérios de Aceite por hook:**
-- [ ] `useXxx()` — lista todos (com filtros)
-- [ ] `useXxx(id)` — busca por ID
-- [ ] `useCreateXxx()` — mutation para criar
-- [ ] `useUpdateXxx()` — mutation para atualizar
-- [ ] `useDeleteXxx()` — mutation para deletar
-- [ ] Invalidação de cache após mutações
-- [ ] Tipos TypeScript corretos
+- [x] `useXxx()` — lista todos (com filtros)
+- [x] `useXxx(id)` — busca por ID
+- [x] `useCreateXxx()` — mutation para criar
+- [x] `useUpdateXxx()` — mutation para atualizar
+- [x] `useDeleteXxx()` — mutation para deletar
+- [x] Invalidação de cache após mutações
+- [x] Tipos TypeScript corretos
 
 **Template de hook:**
 
@@ -212,7 +243,9 @@ export function useDeleteClient() {
 - [x] Auto-geração de slug
 - [x] Toast de sucesso/erro
 - [x] Fechar modal após salvar
-- [ ] Integrar na ClientsList.tsx
+- [x] Integrar na ClientsList.tsx
+- [x] Excluir cliente com confirmação
+- [x] Integrar edição no ClientWorkspace.tsx
 
 ---
 
@@ -228,7 +261,8 @@ export function useDeleteClient() {
 - [x] Modal com formulário
 - [x] Campos: Título, Descrição, Status, Prioridade, Responsável, Due Date
 - [x] Excluir com confirmação (AlertDialog)
-- [ ] Integrar no OperationsTab.tsx
+- [x] Integrar no OperationsTab.tsx
+Nota: Select "Não atribuído" usa valor sentinela para evitar crash do Radix.
 
 ---
 
@@ -244,7 +278,8 @@ export function useDeleteClient() {
 - [x] Modal com formulário
 - [x] Campos: Nome, Telefone, Email, Origem, Stage, Score, Notas
 - [x] Excluir com confirmação
-- [ ] Integrar no CRMTab.tsx
+- [x] Integrar no CRMTab.tsx
+Nota: Select "Não atribuído" usa valor sentinela para evitar crash do Radix.
 
 ---
 
@@ -260,17 +295,18 @@ export function useDeleteClient() {
 - [x] Modal: Tipo, Título, Descrição, Arquivo URL, Prazo
 - [x] Aprovar/Rejeitar/Solicitar Revisão
 - [x] Campo de feedback obrigatório para rejeição
-- [ ] Integrar no ApprovalsTab.tsx
+- [x] Integrar no ApprovalsTab.tsx
+- [ ] Upload de anexos via Storage (bucket approvals)
 
 ---
 
-### US 0.6 — UI de Upload de Assets ✅ COMPLETO
+### US 0.6 — UI de Upload de Assets ⚠️ PARCIAL
 
 **Como** cliente ou agência,  
 **Quero** fazer upload de arquivos,  
 **Para que** os assets fiquem centralizados.
 
-**Status:** ✅ Dialogs implementados em `src/components/dialogs/assets/`
+**Status:** ⚠️ Dialogs implementados em `src/components/dialogs/assets/` (Storage pendente)
 
 **Critérios de Aceite:**
 - [x] Drag-and-drop upload
@@ -278,7 +314,9 @@ export function useDeleteClient() {
 - [x] Suporte a URL externa
 - [x] Preview de imagem
 - [x] Copiar URL
-- [ ] Integrar no AssetsTab.tsx
+- [x] Integrar no AssetsTab.tsx
+- [ ] Buckets e policies do Supabase Storage configurados (assets/approvals)
+- [ ] Upload real funcionando no ambiente
 
 ---
 
@@ -293,7 +331,7 @@ export function useDeleteClient() {
 **Critérios de Aceite:**
 - [x] Dialog de criação com tipo, plataforma, formato, copy
 - [x] Dialog de edição com status e exclusão
-- [ ] Integrar no ContentTab.tsx
+- [x] Integrar no ContentTab.tsx
 
 ---
 
@@ -308,7 +346,7 @@ export function useDeleteClient() {
 **Critérios de Aceite:**
 - [x] Dialog de criação com plataforma, budget, datas
 - [x] Dialog de edição com cálculo de uso de budget
-- [ ] Integrar no MediaTab.tsx
+- [x] Integrar no MediaTab.tsx
 
 ---
 
@@ -323,11 +361,11 @@ export function useDeleteClient() {
 **Critérios de Aceite:**
 - [x] Dialog de criação com canal e categoria
 - [x] Dialog de edição com botão de copiar
-- [ ] Integrar no CRMTab.tsx
+- [x] Integrar no CRMTab.tsx
 
 ---
 
-### US 0.10 — Migrar Componentes de Mock para Hooks ❌
+### US 0.10 — Migrar Componentes de Mock para Hooks ⚠️
 
 **Como** desenvolvedor,  
 **Quero** substituir importações de mockData por hooks reais,  
@@ -341,21 +379,25 @@ export function useDeleteClient() {
 | `ClientWorkspace.tsx` | mockClients | useClient |
 | `TodayDashboard.tsx` | mockTasks, mockApprovals | useTasks, useApprovals |
 | `OperationsTab.tsx` | mockTasks | useTasks |
-| `CRMTab.tsx` | mockLeads, mockMessageTemplates | useLeads, useTemplates |
+| `CRMTab.tsx` | mockLeads, mockMessageTemplates | useLeads, useMessageTemplates |
 | `ContentTab.tsx` | mockCreatives | useCreatives |
 | `MediaTab.tsx` | mockCampaigns | useCampaigns |
 | `ApprovalsTab.tsx` | mockApprovals | useApprovals |
 | `AssetsTab.tsx` | mockAssets | useAssets |
 | `NotesTab.tsx` | mockNotes | useNotes |
-| `Reports.tsx` | mockKPIs | useKPIs |
+| `Reports.tsx` | mockKPIs | useClients, useLeads, useCampaigns |
+
+Estado da migração: Clientes/Operations/CRM/Approvals/Assets/Content/Media/Notes/Reports/TodayDashboard já usam hooks Supabase; partes do Dashboard ainda usam placeholders pontuais.
 
 **Critérios de Aceite:**
-- [ ] Substituir `import { mockX } from @/data/mockData`
-- [ ] Usar `const { data, isLoading, error } = useX()`
-- [ ] Exibir loading state (skeleton)
-- [ ] Exibir error state
-- [ ] Exibir empty state
-- [ ] Funcionar com dados reais
+- [x] Substituir `import { mockX } from @/data/mockData` (para os componentes migrados)
+- [x] Usar `const { data, isLoading, error } = useX()` (para os componentes migrados)
+- [x] Exibir loading state (spinner ou skeleton)
+- [ ] Exibir error state (NotesTab ainda sem erro)
+- [x] Exibir empty state
+- [x] Funcionar com dados reais (validar client_notes no DB)
+
+Nota: OperationsTab/CRMTab/Reports/TodayDashboard já exibem loading/erro/vazio; NotesTab precisa tratar erro e validar tabela `client_notes`.
 
 ---
 
@@ -364,63 +406,110 @@ export function useDeleteClient() {
 Use este checklist para acompanhar o progresso:
 
 #### Clients
-- [ ] Hook `useClients` criado
+- [x] Hook `useClients` criado
 - [ ] Hook testado (console.log)
-- [ ] `CreateClientDialog.tsx` criado
-- [ ] `EditClientDialog.tsx` criado
-- [ ] `ClientsList.tsx` usando hook
-- [ ] Create funcional
-- [ ] Update funcional
-- [ ] Delete funcional
+- [x] `CreateClientDialog.tsx` criado
+- [x] `EditClientDialog.tsx` criado
+- [x] `ClientsList.tsx` usando hook
+- [x] Create funcional
+- [x] Update funcional
+- [x] Delete funcional
 
 #### Tasks
-- [ ] Hook `useTasks` criado
-- [ ] Hook testado
-- [ ] `CreateTaskDialog.tsx` criado
-- [ ] `OperationsTab.tsx` usando hook
-- [ ] CRUD funcional
+- [x] Hook `useTasks` criado
+- [x] Hook testado
+- [x] `CreateTaskDialog.tsx` criado
+- [x] `OperationsTab.tsx` usando hook
+- [x] CRUD funcional
 
 #### Leads
-- [ ] Hook `useLeads` criado
-- [ ] Hook testado
-- [ ] `CreateLeadDialog.tsx` criado
-- [ ] `CRMTab.tsx` usando hook
-- [ ] Move stage funcional
-- [ ] CRUD funcional
+- [x] Hook `useLeads` criado
+- [x] Hook testado
+- [x] `CreateLeadDialog.tsx` criado
+- [x] `CRMTab.tsx` usando hook
+- [x] Move stage funcional
+- [x] CRUD funcional
 
 #### Approvals
-- [ ] Hook `useApprovals` criado
+- [x] Hook `useApprovals` criado
 - [ ] Hook testado
-- [ ] `CreateApprovalDialog.tsx` criado
-- [ ] `ApprovalsTab.tsx` usando hook
-- [ ] Approve/Reject funcional
-- [ ] CRUD funcional
+- [x] `CreateApprovalDialog.tsx` criado
+- [x] `ApprovalsTab.tsx` usando hook
+- [x] Approve/Reject funcional
+- [x] CRUD funcional
 
 #### Assets
-- [ ] Hook `useAssets` criado
+- [x] Hook `useAssets` criado
 - [ ] Supabase Storage configurado
 - [ ] `FileUpload.tsx` criado
-- [ ] `AssetsTab.tsx` usando hook
+- [x] `AssetsTab.tsx` usando hook
 - [ ] Upload funcional
 - [ ] CRUD funcional
 
 #### Creatives
-- [ ] Hook `useCreatives` criado
-- [ ] `CreateCreativeDialog.tsx` criado
-- [ ] `ContentTab.tsx` usando hook
-- [ ] CRUD funcional
+- [x] Hook `useCreatives` criado
+- [x] `CreateCreativeDialog.tsx` criado
+- [x] `EditCreativeDialog.tsx` criado
+- [x] `ContentTab.tsx` usando hook
+- [x] CRUD funcional
 
 #### Campaigns
-- [ ] Hook `useCampaigns` criado
-- [ ] `CreateCampaignDialog.tsx` criado
-- [ ] `MediaTab.tsx` usando hook
-- [ ] CRUD funcional
+- [x] Hook `useCampaigns` criado
+- [x] `CreateCampaignDialog.tsx` criado
+- [x] `EditCampaignDialog.tsx` criado
+- [x] `MediaTab.tsx` usando hook
+- [x] CRUD funcional
 
 #### Message Templates
-- [ ] Hook `useTemplates` criado
-- [ ] `MessageTemplatesManager.tsx` criado
-- [ ] `CRMTab.tsx` usando hook
-- [ ] CRUD funcional
+- [x] Hook `useMessageTemplates` criado
+- [x] `CreateTemplateDialog.tsx` criado
+- [x] `EditTemplateDialog.tsx` criado
+- [x] `CRMTab.tsx` usando hook
+- [x] CRUD funcional
+
+#### Notes (client_notes)
+- [x] Hook `useNotes` criado
+- [x] `CreateNoteDialog.tsx` criado
+- [x] `NotesTab.tsx` usando hook
+- [ ] Update funcional
+- [ ] Delete funcional
+- [ ] Validar migration `client_notes`
+
+#### Client Access (clients_users)
+- [x] Hook `useClientAccess` criado
+- [x] `GrantAccessDialog.tsx` criado
+- [ ] Integrar dialog em tela de clientes
+- [ ] Listar acessos e editar role
+- [ ] Revogar acesso
+
+#### Workspaces
+- [x] Hook `useWorkspaces` criado
+- [ ] CRUD UI básico
+
+#### Workflows / Modules / Steps / Gates / Checklist
+- [x] Hook `useWorkflows` criado
+- [ ] CRUD UI básico
+
+#### Agencies
+- [x] Hook `useAgency` criado
+- [ ] UI de configuração da agência
+
+#### Users
+- [x] Hook `useUsers` criado
+- [ ] UI de usuários (Settings)
+- [ ] Update role funcional
+
+#### KPIs (definitions/values)
+- [x] Hook `useKPIs` criado
+- [ ] UI básica (listagem/edição)
+
+#### Experiments
+- [x] Hook `useExperiments` criado
+- [ ] UI básica (listagem/edição)
+
+#### Audit Logs
+- [x] Hook `useAuditLogs` criado
+- [ ] UI read-only (consulta)
 
 ---
 
@@ -768,7 +857,7 @@ Use este checklist para acompanhar o progresso:
 **Critérios de Aceite:**
 - [x] Seção "Top 5 Ações" no dashboard
 - [x] Cards de ação com botão "Fazer agora"
-- [ ] Dados reais (tasks por prioridade + due_at)
+- [x] Dados reais (tasks por prioridade + due_at)
 - [ ] Botão abre Focus Mode ou navega para item
 
 **Arquivos:**
@@ -785,7 +874,7 @@ Use este checklist para acompanhar o progresso:
 **Critérios de Aceite:**
 - [x] Seção "Gates bloqueados" no dashboard
 - [x] Card com módulo, cliente, motivo
-- [ ] Dados reais do Supabase
+- [x] Dados reais do Supabase
 - [ ] Botão "Resolver agora" navega para workflow
 
 **Arquivos:**
@@ -802,8 +891,8 @@ Use este checklist para acompanhar o progresso:
 **Critérios de Aceite:**
 - [x] Seção "SLAs vencendo" no dashboard
 - [x] Contagem regressiva
-- [ ] Dados reais (approvals + tasks com due_at próximo)
-- [ ] Ordenar por urgência
+- [x] Dados reais (approvals + tasks com due_at próximo)
+- [x] Ordenar por urgência
 
 **Arquivos:**
 - `src/components/dashboard/TodayDashboard.tsx` (modificar)
@@ -819,8 +908,8 @@ Use este checklist para acompanhar o progresso:
 **Critérios de Aceite:**
 - [x] Seção "Clientes em risco" no dashboard
 - [x] Card com nome, último evento, health badge
-- [ ] Dados reais (workspaces com health = risk)
-- [ ] Clicar navega para workspace
+- [x] Dados reais (workspaces com health = risk)
+- [x] Clicar navega para workspace
 
 **Arquivos:**
 - `src/components/dashboard/TodayDashboard.tsx` (modificar)

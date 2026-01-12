@@ -7,8 +7,7 @@ import {
     Plus,
     Search,
     User as UserIcon,
-    Loader2,
-    AlertTriangle
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,24 +114,9 @@ export function NotesTab({ clientId }: NotesTabProps) {
     return (
         <div className="space-y-6">
             {/* Coming Soon Banner */}
-            <GlassCard className="border-amber-500/30 bg-amber-500/5">
-                <GlassCardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-500" />
-                        <div>
-                            <p className="font-medium text-amber-600">Funcionalidade em desenvolvimento</p>
-                            <p className="text-sm text-muted-foreground">
-                                A tabela de notas ainda não foi criada no banco de dados.
-                            </p>
-                        </div>
-                    </div>
-                </GlassCardContent>
-            </GlassCard>
-
-            {/* Header */}
             <GlassCard>
                 <GlassCardContent className="p-4">
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                         {/* Search */}
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -141,12 +125,11 @@ export function NotesTab({ clientId }: NotesTabProps) {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
-                                disabled
                             />
                         </div>
 
                         {/* Filter Buttons */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {(["all", "note", "decision", "ata"] as const).map((type) => (
                                 <Button
                                     key={type}
@@ -154,7 +137,6 @@ export function NotesTab({ clientId }: NotesTabProps) {
                                     variant={filterType === type ? "default" : "outline"}
                                     onClick={() => setFilterType(type)}
                                     className="gap-1"
-                                    disabled
                                 >
                                     {type === "all" ? "Todos" : typeConfig[type].label}
                                     <span className="text-xs opacity-70">({noteCounts[type]})</span>
@@ -167,7 +149,6 @@ export function NotesTab({ clientId }: NotesTabProps) {
                             size="sm"
                             className="gap-2"
                             onClick={() => setIsCreateDialogOpen(true)}
-                            disabled
                         >
                             <Plus className="h-4 w-4" />
                             Nova Nota

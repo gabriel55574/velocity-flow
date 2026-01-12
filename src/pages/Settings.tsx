@@ -55,7 +55,7 @@ export default function Settings() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><h2 className="text-lg font-semibold">Equipe</h2><p className="text-sm text-muted-foreground">Gerencie os membros da sua agência</p></div>
               <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
                 <DialogTrigger asChild><Button className="button-primary gap-2"><Plus className="h-4 w-4" />Convidar</Button></DialogTrigger>
@@ -73,12 +73,12 @@ export default function Settings() {
               <GlassCardContent className="p-0">
                 <div className="divide-y divide-border/50">
                   {mockUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
+                    <div key={user.id} className="flex flex-col gap-3 p-4 hover:bg-muted/30 transition-colors sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-primary font-medium">{user.name.split(' ').map(n => n[0]).join('')}</span></div>
                         <div><p className="font-medium">{user.name}</p><p className="text-sm text-muted-foreground">{user.email}</p></div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                         <Badge variant="secondary">{roleLabels[user.role]}</Badge>
                         <Button size="icon" variant="ghost"><Edit className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" className="text-risk hover:text-risk"><Trash2 className="h-4 w-4" /></Button>
@@ -94,7 +94,7 @@ export default function Settings() {
             <GlassCard>
               <GlassCardHeader><GlassCardTitle>Dados da Agência</GlassCardTitle></GlassCardHeader>
               <GlassCardContent className="space-y-4">
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center"><span className="text-white font-bold text-3xl">V</span></div>
                   <div><Button variant="outline">Alterar Logo</Button><p className="text-xs text-muted-foreground mt-2">PNG ou JPG, máximo 2MB</p></div>
                 </div>
@@ -113,7 +113,7 @@ export default function Settings() {
             <GlassCard>
               <GlassCardHeader><GlassCardTitle>Tema</GlassCardTitle></GlassCardHeader>
               <GlassCardContent className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">{darkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}<div><p className="font-medium">Modo Escuro</p><p className="text-sm text-muted-foreground">Alterna entre tema claro e escuro</p></div></div>
                   <Switch checked={darkMode} onCheckedChange={setDarkMode} />
                 </div>
@@ -122,7 +122,7 @@ export default function Settings() {
             <GlassCard>
               <GlassCardHeader><GlassCardTitle>Cor Primária</GlassCardTitle></GlassCardHeader>
               <GlassCardContent>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {[{ name: 'Azul', color: 'bg-blue-500' }, { name: 'Verde', color: 'bg-green-500' }, { name: 'Roxo', color: 'bg-purple-500' }, { name: 'Rosa', color: 'bg-pink-500' }, { name: 'Laranja', color: 'bg-orange-500' }].map((c) => (
                     <button key={c.name} className={cn("w-10 h-10 rounded-lg transition-transform hover:scale-110 ring-2 ring-transparent", c.color, c.name === 'Azul' && "ring-primary ring-offset-2")} title={c.name} />
                   ))}
@@ -137,7 +137,7 @@ export default function Settings() {
               {integrations.map((integration) => (
                 <GlassCard key={integration.id}>
                   <GlassCardContent className="p-4">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center text-2xl">{integration.icon}</div>
                         <div><h3 className="font-medium">{integration.name}</h3><p className="text-sm text-muted-foreground">{integration.description}</p></div>
@@ -148,7 +148,7 @@ export default function Settings() {
                         {integration.status === 'disconnected' && <Badge variant="outline"><X className="h-3 w-3 mr-1" />Desconectado</Badge>}
                       </div>
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                       {integration.status === 'connected' ? (<><Button variant="outline" size="sm" className="flex-1">Configurar</Button><Button variant="outline" size="sm" className="text-risk hover:text-risk">Desconectar</Button></>) : (<Button className="flex-1 button-primary" size="sm">Conectar</Button>)}
                     </div>
                   </GlassCardContent>
@@ -161,8 +161,8 @@ export default function Settings() {
             <GlassCard>
               <GlassCardHeader><GlassCardTitle>Autenticação em Duas Etapas</GlassCardTitle></GlassCardHeader>
               <GlassCardContent className="space-y-4">
-                <div className="flex items-center justify-between"><div><p className="font-medium">2FA via Aplicativo</p><p className="text-sm text-muted-foreground">Use Google Authenticator ou similar</p></div><Switch /></div>
-                <div className="flex items-center justify-between"><div><p className="font-medium">2FA via SMS</p><p className="text-sm text-muted-foreground">Receba código por mensagem de texto</p></div><Switch /></div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">2FA via Aplicativo</p><p className="text-sm text-muted-foreground">Use Google Authenticator ou similar</p></div><Switch /></div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">2FA via SMS</p><p className="text-sm text-muted-foreground">Receba código por mensagem de texto</p></div><Switch /></div>
               </GlassCardContent>
             </GlassCard>
             <GlassCard>
@@ -170,7 +170,7 @@ export default function Settings() {
               <GlassCardContent>
                 <div className="space-y-3">
                   {[{ device: 'Chrome - Windows', location: 'São Paulo, BR', current: true }, { device: 'Safari - iPhone', location: 'São Paulo, BR', current: false }].map((session, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <div key={idx} className="flex flex-col gap-3 rounded-lg bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div><p className="font-medium text-sm flex items-center gap-2">{session.device}{session.current && <Badge variant="secondary" className="text-xs">Atual</Badge>}</p><p className="text-xs text-muted-foreground">{session.location}</p></div>
                       {!session.current && <Button variant="ghost" size="sm" className="text-risk">Encerrar</Button>}
                     </div>

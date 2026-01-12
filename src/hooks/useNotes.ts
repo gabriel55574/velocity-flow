@@ -1,76 +1,136 @@
 /**
  * useNotes Hook
- * 
- * Stub for notes functionality - client_notes table doesn't exist yet
+ *
+ * CRUD operations for client_notes table
  * Epic 0: US 0.1 - Hooks Supabase por Entidade
  */
 
-// Stub types since client_notes table doesn't exist in schema
-export interface ClientNote {
-    id: string;
-    client_id: string;
-    user_id: string;
-    type: 'note' | 'decision' | 'ata';
-    content: string;
-    created_at: string;
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+export type ClientNote = Database['public']['Tables']['client_notes']['Row'] & {
     user?: {
         id: string;
         full_name: string;
         avatar_url: string | null;
     };
-}
+};
+
+type ClientNoteInsert = Database['public']['Tables']['client_notes']['Insert'];
+type ClientNoteUpdate = Database['public']['Tables']['client_notes']['Update'] & { id: string };
 
 interface NoteFilters {
     client_id?: string;
-    type?: 'note' | 'decision' | 'ata';
+    type?: Database['public']['Enums']['note_type'];
 }
 
-export interface ClientNoteInsert {
-    client_id: string;
-    user_id: string;
-    type: 'note' | 'decision' | 'ata';
-    content: string;
+// LIST - Fetch notes with optional filters
+export function useNotes(filters?: NoteFilters) {
+    return useQuery({
+        queryKey: ['client_notes', filters],
+        queryFn: async () => {
+            let query = supabase.from('client_notes').select(`
+                *,
+                user:user_id (
+                    id,
+                    full_name,
+                    avatar_url
+                )
+            `);
+
+            if (filters?.client_id) {
+                query = query.eq('client_id', filters.client_id);
+            }
+            if (filters?.type) {
+                query = query.eq('type', filters.type);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+            if (error) throw error;
+            return data as ClientNote[];
+        }
+    });
 }
 
-// LIST - Stub that returns empty array (table doesn't exist)
-export function useNotes(_filters?: NoteFilters) {
-    // Table doesn't exist yet - return static stub data
-    return {
-        data: [] as ClientNote[],
-        isLoading: false,
-        error: null,
-    };
-}
-
-// CREATE - Stub mutation
+// CREATE
 export function useCreateNote() {
-    return {
-        mutateAsync: async (_note: ClientNoteInsert): Promise<ClientNote> => {
-            console.warn('client_notes table not implemented yet');
-            throw new Error('Notes feature not yet implemented');
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (note: ClientNoteInsert) => {
+            const { data, error } = await supabase
+                .from('client_notes')
+                .insert(note)
+                .select(`
+                    *,
+                    user:user_id (
+                        id,
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .single();
+
+            if (error) throw error;
+            return data as ClientNote;
         },
-        isPending: false,
-    };
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['client_notes'] });
+            if (data?.client_id) {
+                queryClient.invalidateQueries({ queryKey: ['client_notes', { client_id: data.client_id }] });
+            }
+        }
+    });
 }
 
-// UPDATE - Stub mutation
+// UPDATE
 export function useUpdateNote() {
-    return {
-        mutateAsync: async (_params: Partial<ClientNote> & { id: string }): Promise<ClientNote> => {
-            console.warn('client_notes table not implemented yet');
-            throw new Error('Notes feature not yet implemented');
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: ClientNoteUpdate) => {
+            const { data, error } = await supabase
+                .from('client_notes')
+                .update(updates)
+                .eq('id', id)
+                .select(`
+                    *,
+                    user:user_id (
+                        id,
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .single();
+
+            if (error) throw error;
+            return data as ClientNote;
         },
-        isPending: false,
-    };
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['client_notes'] });
+            if (data?.id) {
+                queryClient.invalidateQueries({ queryKey: ['client_notes', data.id] });
+            }
+        }
+    });
 }
 
-// DELETE - Stub mutation
+// DELETE
 export function useDeleteNote() {
-    return {
-        mutateAsync: async (_id: string): Promise<void> => {
-            console.warn('client_notes table not implemented yet');
-            throw new Error('Notes feature not yet implemented');
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('client_notes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
         },
-        isPending: false,
-    };
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['client_notes'] });
+        }
+    });
 }

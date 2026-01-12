@@ -29,7 +29,6 @@ Docs/
 ├── implementacao.md                  # Guia técnico detalhado
 ├── pendencias_...v2.md               # Pendências + código de referência
 ├── walkthrough.md                    # Histórico de implementação
-├── AGENT_RULES.md                    # ESTE DOCUMENTO
 ├── prompt_inicial.md                 # Especificação original (legacy)
 └── epic-kickoff-ui-overhaul.md       # Epic de UI (concluído)
 ```

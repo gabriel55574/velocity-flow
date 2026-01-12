@@ -27,9 +27,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useUpdateClient } from '@/hooks/useClients';
+import { useDeleteClient, useUpdateClient } from '@/hooks/useClients';
 import type { Database } from '@/integrations/supabase/types';
+import { Trash2 } from 'lucide-react';
 
 type Client = Database['public']['Tables']['clients']['Row'];
 
@@ -46,11 +58,13 @@ interface EditClientDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     client: Client | null;
+    onDeleted?: () => void;
 }
 
-export function EditClientDialog({ open, onOpenChange, client }: EditClientDialogProps) {
+export function EditClientDialog({ open, onOpenChange, client, onDeleted }: EditClientDialogProps) {
     const { toast } = useToast();
     const updateClient = useUpdateClient();
+    const deleteClient = useDeleteClient();
 
     const form = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -92,6 +106,28 @@ export function EditClientDialog({ open, onOpenChange, client }: EditClientDialo
         } catch (error) {
             toast({
                 title: 'Erro ao atualizar cliente',
+                description: error instanceof Error ? error.message : 'Tente novamente.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!client) return;
+
+        try {
+            await deleteClient.mutateAsync(client.id);
+
+            toast({
+                title: 'Cliente excluído',
+                description: `${client.name} foi removido.`,
+            });
+
+            onOpenChange(false);
+            onDeleted?.();
+        } catch (error) {
+            toast({
+                title: 'Erro ao excluir cliente',
                 description: error instanceof Error ? error.message : 'Tente novamente.',
                 variant: 'destructive',
             });
@@ -159,6 +195,28 @@ export function EditClientDialog({ open, onOpenChange, client }: EditClientDialo
                     </div>
 
                     <DialogFooter>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button type="button" variant="outline" className="gap-2 text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                    Excluir
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Essa ação não pode ser desfeita. O cliente e seus dados serão removidos.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete}>
+                                        Excluir
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancelar
                         </Button>

@@ -10,10 +10,9 @@ import {
     ChevronRight
 } from "lucide-react";
 import { useState } from "react";
-import type { WorkflowModule } from "@/data/mockData";
 
 interface ModuleCardProps {
-    module: WorkflowModule;
+    module: any;
     isActive?: boolean;
 }
 
@@ -46,8 +45,12 @@ const statusConfig = {
 
 export function ModuleCard({ module, isActive = false }: ModuleCardProps) {
     const [isExpanded, setIsExpanded] = useState(isActive);
-    const config = statusConfig[module.status];
+    const status = module.status || 'not_started';
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
     const StatusIcon = config.icon;
+    const steps = module.steps || [];
+    const title = module.name || module.title || 'Módulo';
+    const progress = module.progress || 0;
 
     return (
         <div
@@ -67,17 +70,17 @@ export function ModuleCard({ module, isActive = false }: ModuleCardProps) {
 
                 <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm">{module.title}</h3>
+                        <h3 className="font-semibold text-sm">{title}</h3>
                         <StatusBadge
-                            status={module.status === "done" ? "ok" : module.status === "blocked" ? "risk" : "warn"}
+                            status={status === "done" ? "ok" : status === "blocked" ? "risk" : "warn"}
                             size="sm"
                         >
                             {config.label}
                         </StatusBadge>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                        <Progress value={module.progress} className="h-1.5 flex-1 max-w-32" />
-                        <span className="text-xs text-muted-foreground">{module.progress}%</span>
+                        <Progress value={progress} className="h-1.5 flex-1 max-w-32" />
+                        <span className="text-xs text-muted-foreground">{progress}%</span>
                     </div>
                 </div>
 
@@ -94,15 +97,20 @@ export function ModuleCard({ module, isActive = false }: ModuleCardProps) {
                     {/* Steps */}
                     <div className="space-y-2">
                         <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            Etapas ({module.steps.length})
+                            Etapas ({steps.length})
                         </h4>
-                        {module.steps.map((step) => {
+                        {steps.map((step: any) => {
+                            const status = step.status || 'pending';
                             const stepConfig = {
                                 pending: { icon: Circle, color: "text-muted-foreground" },
+                                backlog: { icon: Circle, color: "text-muted-foreground" },
+                                todo: { icon: Circle, color: "text-muted-foreground" },
                                 in_progress: { icon: Clock, color: "text-blue-500" },
+                                doing: { icon: Clock, color: "text-blue-500" },
+                                review: { icon: Clock, color: "text-blue-500" },
                                 done: { icon: CheckCircle2, color: "text-emerald-500" },
                                 blocked: { icon: AlertTriangle, color: "text-red-500" },
-                            }[step.status];
+                            }[status] || { icon: Circle, color: "text-muted-foreground" };
                             const StepIcon = stepConfig.icon;
 
                             return (
@@ -112,10 +120,12 @@ export function ModuleCard({ module, isActive = false }: ModuleCardProps) {
                                 >
                                     <StepIcon className={`h-4 w-4 ${stepConfig.color}`} />
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium">{step.title}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {step.owner} • SLA: {step.slaHours}h
-                                        </p>
+                                        <p className="text-sm font-medium">{step.name || step.title}</p>
+                                        {step.description && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                {step.description}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             );

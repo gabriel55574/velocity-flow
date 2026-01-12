@@ -1,6 +1,6 @@
 # 📘 Guia de Implementação — Velocity Agency OS
 
-**Última atualização:** 09 jan 2026 18:47  
+**Última atualização:** 10 jan 2026 13:03  
 **Propósito:** Documentação técnica COMPLETA para continuidade do projeto sem erros.  
 **Documento PDR Base:** `velocity_agency_os_PDR_v1_0.md`
 
@@ -1221,6 +1221,76 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 ---
 
 ## 10. Changelog de Implementação
+
+### 10 jan 2026 11:27 — Integração de Dialogs P1
+
+- ✅ Integrados `CreateTemplateDialog`/`EditTemplateDialog` no `CRMTab.tsx`
+- ✅ Integrados `CreateCreativeDialog`/`EditCreativeDialog` no `ContentTab.tsx`
+- ✅ Integrados `CreateCampaignDialog`/`EditCampaignDialog` no `MediaTab.tsx`
+
+### 10 jan 2026 11:19 — Compactação de Números no Mobile
+
+- ✅ Criado `formatCompactNumber`/`formatCompactCurrency` em `src/lib/utils.ts`
+- ✅ KPIs do `ClientWorkspace.tsx` com versões compactas no mobile
+- ✅ Resumo do `MediaTab.tsx` com valores compactos e 1 coluna no mobile
+
+### 10 jan 2026 13:03 — Client Approvals fix
+
+- ✅ Corrigido `/client/approvals` para usar campos reais do Supabase
+- ✅ Adicionado fallback de tipos e estados de erro no portal do cliente
+
+### 10 jan 2026 12:57 — Today Dashboard + CRUD (Clients/Approvals/Assets)
+
+- ✅ TodayDashboard agora usa hooks reais com estados de erro e priorização por SLA
+- ✅ Aprovações: criação/edição integradas ao `ApprovalsTab.tsx`
+- ✅ Assets: criação/edição integradas ao `AssetsTab.tsx` + correções de campos
+- ✅ Clients: edição/exclusão integradas no `ClientWorkspace.tsx`
+
+### 10 jan 2026 12:34 — Reports com dados reais
+
+- ✅ Migrado `Reports.tsx` para hooks reais (`useClients`, `useLeads`, `useCampaigns`)
+- ✅ KPIs e gráficos agora calculados por período/cliente
+- ✅ Estados de loading, erro e vazio adicionados
+- ✅ Origem dos leads agora exibe percentuais corretos
+
+### 10 jan 2026 11:12 — Responsividade CRM/Ops
+
+- ✅ Pipeline do `CRMTab.tsx` agora usa grid responsivo
+- ✅ Kanban do `OperationsTab.tsx` agora usa grid responsivo
+
+### 10 jan 2026 11:10 — Ajuste Tabs no Client Workspace
+
+- ✅ Tabs agora fazem wrap em `ClientWorkspace.tsx`
+- ✅ Tipografia compacta nos triggers para mobile
+
+### 10 jan 2026 11:06 — Responsividade Tabs do Workspace
+
+- ✅ Ajustados grids/headers em `WorkflowTimeline.tsx`, `OperationsTab.tsx`, `CRMTab.tsx`, `ApprovalsTab.tsx`, `ContentTab.tsx`
+- ✅ Calendário do `ContentTab.tsx` com scroll no mobile
+- ✅ Filtros responsivos em `NotesTab.tsx`
+
+### 10 jan 2026 11:01 — Responsividade Clients/Workspace
+
+- ✅ Ajustado layout responsivo em `ClientsList.tsx`
+- ✅ Ajustado header e tabs em `ClientWorkspace.tsx`
+
+### 10 jan 2026 10:56 — Responsividade Clients/Settings
+
+- ✅ Ajustado layout responsivo em `ClientsList.tsx`
+- ✅ Ajustado layout responsivo em `Settings.tsx`
+
+### 10 jan 2026 10:50 — Correção de Select nos Dialogs
+
+- ✅ Removido `SelectItem value=""` em dialogs de tasks/leads/steps
+- ✅ Valor sentinela para "Não atribuído" evita crash do Radix Select
+
+### 10 jan 2026 10:42 — Integração CRM/Tasks + Portal
+
+- ✅ Integrados `CreateTaskDialog`/`EditTaskDialog` no `OperationsTab.tsx`
+- ✅ Integrados `CreateLeadDialog`/`EditLeadDialog` no `CRMTab.tsx`
+- ✅ Adicionadas colunas Backlog/Revisão e estado de erro nos tabs
+- ✅ Corrigido `ClientDashboard.tsx` para usar `user.id` no vínculo
+- ✅ Criados `src/lib/supabase.ts` e `src/types/database.ts` (reexports)
 
 ### 09 jan 2026 18:47 — Documentação Atualizada
 

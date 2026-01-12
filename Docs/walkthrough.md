@@ -1,6 +1,6 @@
 # 📝 Walkthrough — Velocity Agency OS
 
-**Última atualização:** 09/01/2026 19:40  
+**Última atualização:** 10/01/2026 13:03  
 **Propósito:** Registro histórico do que foi implementado no projeto.
 
 ---
@@ -210,6 +210,152 @@ src/components/dialogs/
 
 ---
 
+### 📅 10/01/2026 — Sessão 5: Integração CRM/Tasks + Portal
+
+#### ✅ Integrações de CRUD no Workspace
+- **OperationsTab**
+  - Dialogs de criação/edição de tasks integrados
+  - Colunas adicionadas para Backlog e Revisão
+  - Estado de erro e ajuste de data/assignee
+- **CRMTab**
+  - Dialogs de criação/edição de leads integrados
+  - Botão “Novo Lead” no header do pipeline
+  - Estado de erro para leads/templates
+
+#### ✅ Ajustes no Portal do Cliente
+- **ClientDashboard**
+  - Correção de vínculo de cliente usando `user.id` atual
+
+#### ✅ Padronização de imports Supabase
+- **Arquivos criados:**
+  - `src/lib/supabase.ts` — reexport do client
+  - `src/types/database.ts` — reexport dos tipos
+
+---
+
+### 📅 10/01/2026 — Sessão 6: Correção de Select nos Dialogs
+
+#### ✅ Correções de crash ao abrir dialogs
+- **Tasks/Leads/Steps**
+  - Ajustado Select para não usar `value=""` em `SelectItem`
+- Valor sentinela para "Não atribuído" evitando tela em branco
+- Conversão para string vazia apenas no submit
+
+---
+
+### 📅 10/01/2026 — Sessão 7: Responsividade Clients/Settings
+
+#### ✅ Ajustes de layout responsivo
+- **Clients**
+  - Grid de estatísticas agora quebra em 2 colunas no mobile
+  - Filtros e toggles empilham no mobile
+- **Settings**
+  - Layouts com `flex` agora quebram e empilham no mobile
+  - Swatches e ações em listas agora fazem wrap
+
+---
+
+### 📅 10/01/2026 — Sessão 8: Responsividade Clients/Workspace
+
+#### ✅ Ajustes de layout responsivo
+- **Clients**
+  - Filtros agora fazem wrap em telas pequenas
+  - Espaçamentos alinhados com /today
+- **Client Workspace**
+  - Header e ações adaptados para mobile
+  - Tabs com scroll horizontal no mobile
+
+---
+
+### 📅 10/01/2026 — Sessão 9: Responsividade Tabs do Workspace
+
+#### ✅ Ajustes de layout responsivo
+- **Workflow/CRM/Operations/Content/Approvals**
+  - Grids agora quebram em 2 colunas no mobile
+  - Headers com ações empilham em telas pequenas
+- **Content**
+  - Calendário editorial com scroll horizontal no mobile
+- **Notes**
+  - Filtros e botões fazem wrap no mobile
+
+---
+
+### 📅 10/01/2026 — Sessão 10: Ajuste Tabs no Client Workspace
+
+#### ✅ Refinos de responsividade
+- **Client Workspace**
+  - Tabs agora quebram em múltiplas linhas no mobile
+  - Tipografia compacta nos triggers para caber em telas pequenas
+
+---
+
+### 📅 10/01/2026 — Sessão 11: Responsividade CRM/Ops
+
+#### ✅ Ajustes de layout responsivo
+- **CRM**
+  - Pipeline agora empilha em grid responsivo (sem scroll horizontal)
+- **Ops**
+  - Kanban agora empilha em grid responsivo (sem scroll horizontal)
+
+---
+
+### 📅 10/01/2026 — Sessão 12: Compactação de Números no Mobile
+
+#### ✅ Ajustes de responsividade numérica
+- **Client Workspace**
+  - KPIs exibem números compactos no mobile (K/M/B)
+- **Media**
+  - Valores de investimento/CPL compactos no mobile
+  - Grid de resumo em 1 coluna no mobile
+
+---
+
+### 📅 10/01/2026 — Sessão 13: Integração de Dialogs P1
+
+#### ✅ Integrações de CRUD
+- **CRM**
+  - Templates agora criam/editar/excluem via dialogs
+- **Content**
+  - Criativos agora criam/editar/excluem via dialogs
+- **Media**
+  - Campanhas agora criam/editar/excluem via dialogs
+
+---
+
+### 📅 10/01/2026 — Sessão 14: Reports com dados reais
+
+#### ✅ Migração do Reports
+- **Reports**
+  - KPIs e gráficos agora usam hooks (`useClients`, `useLeads`, `useCampaigns`)
+  - Cálculo por período/cliente selecionado
+  - Estados de loading, erro e vazio adicionados
+  - Origem dos leads exibe percentuais corretos
+- **Arquivo atualizado:**
+  - `src/pages/Reports.tsx`
+
+---
+
+### 📅 10/01/2026 — Sessão 15: Today Dashboard + CRUD
+
+#### ✅ Today Dashboard
+- Top 5 Ações agora usa tarefas/aprovações reais com ordenação por SLA
+- Estados de erro adicionados no dashboard
+
+#### ✅ CRUD pendente (Clients/Approvals/Assets)
+- **Clients**: edição/exclusão integradas no `ClientWorkspace.tsx`
+- **Approvals**: criação/edição integradas no `ApprovalsTab.tsx`
+- **Assets**: criação/edição integradas no `AssetsTab.tsx` + correção de campos
+
+---
+
+### 📅 10/01/2026 — Sessão 16: Client Approvals fix
+
+#### ✅ Portal do Cliente
+- `/client/approvals` agora usa campos reais e não quebra
+- Fallbacks de tipo/SLA e estado de erro adicionados
+
+---
+
 ## Estado Atual do Sistema
 
 ### Frontend
@@ -364,6 +510,18 @@ velocity-flow/
 |------|------|-----------|
 | 09/01/2026 AM | Documentação + Backend | PDR criado, Schema deployed, Docs atualizados |
 | 09/01/2026 PM | Epic 0: Hooks CRUD | 10 hooks criados com CRUD completo |
+| 10/01/2026 AM | Integração CRM/Tasks + Portal | Dialogs integrados e ajustes no portal |
+| 10/01/2026 AM | Correção dialogs | SelectItem com valor sentinela (sem crash) |
+| 10/01/2026 AM | Responsividade | Clients/Settings ajustados para mobile |
+| 10/01/2026 AM | Responsividade | Clients + Workspace ajustados (tabs/header) |
+| 10/01/2026 AM | Responsividade | Ajustes em tabs do workspace |
+| 10/01/2026 AM | Responsividade | Tabs do workspace com wrap no mobile |
+| 10/01/2026 AM | Responsividade | CRM/Ops empilhados no mobile |
+| 10/01/2026 AM | Responsividade | Números compactos no mobile |
+| 10/01/2026 AM | Integração CRUD | Dialogs P1 integrados em CRM/Content/Media |
+| 10/01/2026 PM | Relatórios | Reports migrado para dados reais |
+| 10/01/2026 PM | Today + CRUD | Dashboard + Clients/Approvals/Assets integrados |
+| 10/01/2026 PM | Portal Cliente | /client/approvals corrigido |
 
 ---
 

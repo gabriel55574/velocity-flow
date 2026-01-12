@@ -57,6 +57,7 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+const UNASSIGNED_VALUE = "unassigned";
 
 interface EditTaskDialogProps {
     open: boolean;
@@ -227,14 +228,14 @@ export function EditTaskDialog({ open, onOpenChange, task, agencyId }: EditTaskD
                         <div className="space-y-2">
                             <Label htmlFor="assignee_id">Responsável</Label>
                             <Select
-                                value={form.watch('assignee_id') || ''}
-                                onValueChange={(value) => form.setValue('assignee_id', value)}
+                                value={form.watch('assignee_id') || UNASSIGNED_VALUE}
+                                onValueChange={(value) => form.setValue('assignee_id', value === UNASSIGNED_VALUE ? '' : value)}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecionar..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Não atribuído</SelectItem>
+                                    <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
                                     {teamMembers?.map((member) => (
                                         <SelectItem key={member.id} value={member.id}>
                                             {member.full_name}

@@ -16,6 +16,7 @@ type AssetUpdate = Database['public']['Tables']['assets']['Update'];
 interface AssetFilters {
     client_id?: string;
     type?: Database['public']['Enums']['asset_type'];
+    status?: Database['public']['Enums']['asset_status'];
 }
 
 // LIST - Fetch all assets with optional filters
@@ -30,6 +31,9 @@ export function useAssets(filters?: AssetFilters) {
             }
             if (filters?.type) {
                 query = query.eq('type', filters.type);
+            }
+            if (filters?.status) {
+                query = query.eq('status', filters.status);
             }
 
             const { data, error } = await query.order('created_at', { ascending: false });
@@ -185,6 +189,7 @@ export function useUploadAsset() {
                     type,
                     url: publicUrl,
                     created_by,
+                    status: 'uploaded',
                     metadata: {
                         originalName: file.name,
                         size: file.size,

@@ -37,6 +37,8 @@ import { useClient } from "@/hooks/useClients";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useLeads } from "@/hooks/useLeads";
 import { useState } from "react";
+import { formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
+import { EditClientDialog } from "@/components/dialogs/clients/EditClientDialog";
 
 export function ClientWorkspace() {
   const { id } = useParams();
@@ -46,6 +48,7 @@ export function ClientWorkspace() {
   const { data: leads, isLoading: leadsLoading, error: leadsError } = useLeads({ client_id: id || "" });
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [editClientOpen, setEditClientOpen] = useState(false);
 
   if (clientLoading || campaignsLoading || leadsLoading) {
     return (
@@ -112,6 +115,7 @@ export function ClientWorkspace() {
     {
       label: "Leads Totais",
       value: totalLeads.toString(),
+      mobileValue: formatCompactNumber(totalLeads),
       change: "+12.5%",
       trend: "up" as const,
       icon: Users,
@@ -120,6 +124,7 @@ export function ClientWorkspace() {
     {
       label: "CPL Médio",
       value: `R$ ${avgCPL.toFixed(2)}`,
+      mobileValue: formatCompactCurrency(avgCPL),
       change: "-5.2%",
       trend: "down" as const,
       icon: Target,
@@ -128,6 +133,7 @@ export function ClientWorkspace() {
     {
       label: "Investimento",
       value: `R$ ${totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      mobileValue: formatCompactCurrency(totalSpent),
       change: "+8.1%",
       trend: "up" as const,
       icon: DollarSign,
@@ -136,6 +142,7 @@ export function ClientWorkspace() {
     {
       label: "Ativas",
       value: activeCampaigns.toString(),
+      mobileValue: formatCompactNumber(activeCampaigns),
       change: "Stable",
       trend: "up" as const,
       icon: Activity,
@@ -147,8 +154,8 @@ export function ClientWorkspace() {
     <div className="min-h-screen bg-background">
       {/* Workspace Header */}
       <div className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-3 md:py-0 md:h-16 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             <Button
               variant="ghost"
               size="sm"
@@ -156,24 +163,24 @@ export function ClientWorkspace() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="p-2 rounded-xl bg-primary/10">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">{client.name}</h1>
-                <p className="text-xs text-muted-foreground">Workspace de Estratégia</p>
+                <h1 className="font-bold text-lg truncate">{client.name}</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">Workspace de Estratégia</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2">
               <Share2 className="h-4 w-4" />
-              Compartilhar
+              <span className="hidden sm:inline">Compartilhar</span>
             </Button>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" onClick={() => setEditClientOpen(true)}>
               <Settings className="h-4 w-4" />
-              Configurações
+              <span className="hidden sm:inline">Configurações</span>
             </Button>
           </div>
         </div>
@@ -181,32 +188,34 @@ export function ClientWorkspace() {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between gap-4">
-            <TabsList className="bg-muted/50 p-1 rounded-xl">
-              <TabsTrigger value="overview" className="rounded-lg gap-2">
-                <LayoutDashboard className="h-4 w-4" /> Overview
-              </TabsTrigger>
-              <TabsTrigger value="strategy" className="rounded-lg gap-2">
-                <Target className="h-4 w-4" /> Estratégia
-              </TabsTrigger>
-              <TabsTrigger value="data" className="rounded-lg gap-2">
-                <Database className="h-4 w-4" /> Dados
-              </TabsTrigger>
-              <TabsTrigger value="media" className="rounded-lg gap-2">
-                <Activity className="h-4 w-4" /> Mídia
-              </TabsTrigger>
-              <TabsTrigger value="crm" className="rounded-lg gap-2">
-                <MessageSquare className="h-4 w-4" /> CRM
-              </TabsTrigger>
-              <TabsTrigger value="ops" className="rounded-lg gap-2">
-                <Play className="h-4 w-4" /> Ops
-              </TabsTrigger>
-              <TabsTrigger value="notes" className="rounded-lg gap-2">
-                <FileText className="h-4 w-4" /> Notas
-              </TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="w-full">
+              <TabsList className="flex flex-wrap justify-start gap-1 bg-muted/50 p-1 rounded-xl h-auto w-full">
+                <TabsTrigger value="overview" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <LayoutDashboard className="h-4 w-4" /> Overview
+                </TabsTrigger>
+                <TabsTrigger value="strategy" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Target className="h-4 w-4" /> Estratégia
+                </TabsTrigger>
+                <TabsTrigger value="data" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Database className="h-4 w-4" /> Dados
+                </TabsTrigger>
+                <TabsTrigger value="media" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Activity className="h-4 w-4" /> Mídia
+                </TabsTrigger>
+                <TabsTrigger value="crm" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <MessageSquare className="h-4 w-4" /> CRM
+                </TabsTrigger>
+                <TabsTrigger value="ops" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Play className="h-4 w-4" /> Ops
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <FileText className="h-4 w-4" /> Notas
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/50 px-3 py-1.5 rounded-full border border-border/50">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-card/50 px-3 py-1.5 rounded-full border border-border/50 self-start lg:self-auto">
               <Calendar className="h-4 w-4 text-primary" />
               Janeiro 2026
             </div>
@@ -225,7 +234,10 @@ export function ClientWorkspace() {
                       {kpi.change}
                     </div>
                   </div>
-                  <p className="text-2xl font-bold">{kpi.value}</p>
+                  <p className="text-2xl font-bold">
+                    <span className="sm:hidden">{kpi.mobileValue ?? kpi.value}</span>
+                    <span className="hidden sm:inline">{kpi.value}</span>
+                  </p>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">{kpi.label}</p>
                 </GlassCard>
               ))}
@@ -304,6 +316,13 @@ export function ClientWorkspace() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <EditClientDialog
+        open={editClientOpen}
+        onOpenChange={setEditClientOpen}
+        client={client}
+        onDeleted={() => navigate("/clients")}
+      />
     </div>
   );
 }

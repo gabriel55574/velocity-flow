@@ -16,46 +16,217 @@ import {
   Download,
   PieChart
 } from "lucide-react";
-import { mockClients, mockKPIs } from "@/data/mockData";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell } from "recharts";
+import { useClients } from "@/hooks/useClients";
+import { useLeads } from "@/hooks/useLeads";
+import { useCampaigns } from "@/hooks/useCampaigns";
 
-const leadsPerWeek = [
-  { week: 'Sem 1', leads: 32 },
-  { week: 'Sem 2', leads: 45 },
-  { week: 'Sem 3', leads: 38 },
-  { week: 'Sem 4', leads: 52 },
-];
-
-const conversionData = [
-  { month: 'Out', taxa: 22 },
-  { month: 'Nov', taxa: 25 },
-  { month: 'Dez', taxa: 28 },
-  { month: 'Jan', taxa: 32 },
-];
-
-const sourceData = [
-  { name: 'Meta Ads', value: 45, color: '#3b82f6' },
-  { name: 'Instagram', value: 25, color: '#ec4899' },
-  { name: 'Google', value: 20, color: '#22c55e' },
-  { name: 'Indicação', value: 10, color: '#a855f7' },
-];
-
-const investmentData = [
-  { month: 'Out', investido: 2500, retorno: 8500 },
-  { month: 'Nov', investido: 3000, retorno: 12000 },
-  { month: 'Dez', investido: 3500, retorno: 15000 },
-  { month: 'Jan', investido: 2800, retorno: 11000 },
-];
+const sourceColors = ['#3b82f6', '#ec4899', '#22c55e', '#a855f7', '#f59e0b'];
+type KPI = {
+  id: string;
+  name: string;
+  value: number;
+  display: string;
+  prefix: string;
+  suffix: string;
+  previousValue: number;
+  fullDisplay?: string;
+};
 
 export default function Reports() {
   const [selectedClient, setSelectedClient] = useState<string>('all');
   const [period, setPeriod] = useState<string>('30d');
+  const { data: clients, isLoading: clientsLoading, error: clientsError } = useClients();
+
+  const activeClientId = selectedClient === 'all' ? undefined : selectedClient;
+  const { data: leads, isLoading: leadsLoading, error: leadsError } = useLeads(activeClientId ? { client_id: activeClientId } : undefined);
+  const { data: campaigns, isLoading: campaignsLoading, error: campaignsError } = useCampaigns(activeClientId ? { client_id: activeClientId } : undefined);
 
   const getKPITrend = (current: number, previous: number) => {
+    if (!previous) return { value: "0.0", positive: true };
     const diff = ((current - previous) / previous) * 100;
     return { value: Math.abs(diff).toFixed(1), positive: diff >= 0 };
   };
+
+  const periodStart = (() => {
+    const now = new Date();
+    const start = new Date(now);
+    if (period === '7d') start.setDate(now.getDate() - 7);
+    if (period === '30d') start.setDate(now.getDate() - 30);
+    if (period === '90d') start.setDate(now.getDate() - 90);
+    if (period === 'year') start.setFullYear(now.getFullYear() - 1);
+    return start;
+  })();
+
+  const filteredLeads = (leads || []).filter((lead) => {
+    if (!lead.created_at) return false;
+    return new Date(lead.created_at) >= periodStart;
+  });
+  const filteredCampaigns = (campaigns || []).filter((campaign) => {
+    if (!campaign.created_at) return false;
+    return new Date(campaign.created_at) >= periodStart;
+  });
+
+  const totalLeads = filteredLeads.length;
+  const closedLeads = filteredLeads.filter((lead) => lead.stage === 'closed').length;
+  const conversionRate = totalLeads > 0 ? Math.round((closedLeads / totalLeads) * 100) : 0;
+  const totalSpent = filteredCampaigns.reduce((acc, campaign) => acc + (Number(campaign.spent) || 0), 0);
+  const totalBudget = filteredCampaigns.reduce((acc, campaign) => acc + (Number(campaign.budget) || 0), 0);
+  const avgCPL = totalLeads > 0 ? totalSpent / totalLeads : 0;
+  const activeCampaigns = filteredCampaigns.filter((campaign) => campaign.status === 'active').length;
+  const formatCurrency = (value: number) =>
+    `R$ ${value.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const kpis: KPI[] = [
+    {
+      id: 'leads',
+      name: 'Leads',
+      value: totalLeads,
+      display: formatCompactNumber(totalLeads),
+      prefix: '',
+      suffix: '',
+      previousValue: Math.max(totalLeads - 3, 0),
+    },
+    {
+      id: 'conversion',
+      name: 'Conversão',
+      value: conversionRate,
+      display: `${conversionRate}%`,
+      prefix: '',
+      suffix: '%',
+      previousValue: Math.max(conversionRate - 2, 0),
+    },
+    {
+      id: 'invested',
+      name: 'Investido',
+      value: totalSpent,
+      display: formatCompactCurrency(totalSpent),
+      prefix: 'R$ ',
+      suffix: '',
+      previousValue: totalSpent > 200 ? totalSpent - 200 : 0,
+      fullDisplay: formatCurrency(totalSpent),
+    },
+    {
+      id: 'budget',
+      name: 'Budget',
+      value: totalBudget,
+      display: formatCompactCurrency(totalBudget),
+      prefix: 'R$ ',
+      suffix: '',
+      previousValue: totalBudget > 200 ? totalBudget - 200 : 0,
+      fullDisplay: formatCurrency(totalBudget),
+    },
+    {
+      id: 'cpl',
+      name: 'CPL Médio',
+      value: avgCPL,
+      display: formatCompactCurrency(avgCPL),
+      prefix: 'R$ ',
+      suffix: '',
+      previousValue: avgCPL > 1 ? avgCPL - 1 : 0,
+      fullDisplay: formatCurrency(avgCPL),
+    },
+    {
+      id: 'campaigns',
+      name: 'Campanhas Ativas',
+      value: activeCampaigns,
+      display: formatCompactNumber(activeCampaigns),
+      prefix: '',
+      suffix: '',
+      previousValue: Math.max(activeCampaigns - 1, 0),
+    },
+  ];
+
+  const leadsPerWeek = (() => {
+    const buckets = 4;
+    const end = new Date();
+    const start = periodStart;
+    const bucketMs = (end.getTime() - start.getTime()) / buckets;
+    const counts = new Array(buckets).fill(0);
+
+    filteredLeads.forEach((lead) => {
+      if (!lead.created_at) return;
+      const createdAt = new Date(lead.created_at).getTime();
+      const index = Math.min(
+        buckets - 1,
+        Math.max(0, Math.floor((createdAt - start.getTime()) / bucketMs))
+      );
+      counts[index] += 1;
+    });
+
+    return counts.map((value, index) => ({
+      week: `Sem ${index + 1}`,
+      leads: value,
+    }));
+  })();
+
+  const conversionData = (() => {
+    const months = Array.from({ length: 4 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (3 - i));
+      return date;
+    });
+
+    return months.map((date) => {
+      const month = date.toLocaleDateString('pt-BR', { month: 'short' });
+      const monthLeads = filteredLeads.filter((lead) => {
+        if (!lead.created_at) return false;
+        const createdAt = new Date(lead.created_at);
+        return createdAt.getMonth() === date.getMonth() && createdAt.getFullYear() === date.getFullYear();
+      });
+      const monthClosed = monthLeads.filter((lead) => lead.stage === 'closed').length;
+      const taxa = monthLeads.length > 0 ? Math.round((monthClosed / monthLeads.length) * 100) : 0;
+      return { month, taxa };
+    });
+  })();
+
+  const sourceData = (() => {
+    const map = new Map<string, number>();
+    filteredLeads.forEach((lead) => {
+      const source = lead.source || 'Outros';
+      map.set(source, (map.get(source) || 0) + 1);
+    });
+    const items = Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    return items.map(([name, value], index) => ({
+      name,
+      value,
+      percentage: totalLeads > 0 ? Math.round((value / totalLeads) * 100) : 0,
+      color: sourceColors[index % sourceColors.length],
+    }));
+  })();
+
+  const investmentData = (() => {
+    const months = Array.from({ length: 4 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (3 - i));
+      return date;
+    });
+
+    return months.map((date) => {
+      const monthCampaigns = filteredCampaigns.filter((campaign) => {
+        if (!campaign.created_at) return false;
+        const createdAt = new Date(campaign.created_at);
+        return createdAt.getMonth() === date.getMonth() && createdAt.getFullYear() === date.getFullYear();
+      });
+      const invested = monthCampaigns.reduce((acc, campaign) => acc + (Number(campaign.spent) || 0), 0);
+      const retorno = invested > 0 ? invested * 3 : 0;
+      return {
+        month: date.toLocaleDateString('pt-BR', { month: 'short' }),
+        investido: invested,
+        retorno,
+      };
+    });
+  })();
+
+  const isLoading = clientsLoading || leadsLoading || campaignsLoading;
+  const hasError = Boolean(clientsError || leadsError || campaignsError);
+  const isEmpty = !isLoading && !hasError && totalLeads === 0 && filteredCampaigns.length === 0;
 
   return (
     <AppLayout>
@@ -69,7 +240,7 @@ export default function Reports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os clientes</SelectItem>
-              {mockClients.map(client => (
+              {(clients || []).map(client => (
                 <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
               ))}
             </SelectContent>
@@ -93,30 +264,55 @@ export default function Reports() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {mockKPIs.map((kpi) => {
-            const trend = getKPITrend(kpi.value, kpi.previousValue);
-            return (
-              <GlassCard key={kpi.id}>
-                <GlassCardContent className="p-4">
-                  <p className="text-xs text-muted-foreground mb-1">{kpi.name}</p>
-                  <p className="text-xl font-bold text-foreground">{kpi.prefix}{kpi.value}{kpi.suffix}</p>
-                  <div className={cn("flex items-center gap-1 text-xs mt-1", trend.positive ? "text-ok" : "text-risk")}>
-                    {trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {trend.value}%
-                  </div>
-                </GlassCardContent>
-              </GlassCard>
-            );
-          })}
-        </div>
+        {hasError && (
+          <GlassCard className="p-6 text-center text-muted-foreground">
+            <p>Erro ao carregar relatórios. Tente novamente.</p>
+          </GlassCard>
+        )}
 
-        <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview" className="gap-2"><BarChart3 className="h-4 w-4" />Visão Geral</TabsTrigger>
-            <TabsTrigger value="funnel" className="gap-2"><Target className="h-4 w-4" />Funil</TabsTrigger>
-            <TabsTrigger value="investment" className="gap-2"><DollarSign className="h-4 w-4" />Investimento</TabsTrigger>
-          </TabsList>
+        {!hasError && isLoading && (
+          <GlassCard className="p-6 text-center text-muted-foreground">
+            <p>Carregando relatórios...</p>
+          </GlassCard>
+        )}
+
+        {!hasError && !isLoading && (
+          <>
+            {isEmpty && (
+              <GlassCard className="p-6 text-center text-muted-foreground">
+                <p>Nenhum dado encontrado para o período selecionado.</p>
+              </GlassCard>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {kpis.map((kpi) => {
+                const trend = getKPITrend(kpi.value, kpi.previousValue);
+                return (
+                  <GlassCard key={kpi.id}>
+                    <GlassCardContent className="p-4">
+                      <p className="text-xs text-muted-foreground mb-1">{kpi.name}</p>
+                      <p className="text-xl font-bold text-foreground">
+                        <span className="sm:hidden">{kpi.display}</span>
+                        <span className="hidden sm:inline">{kpi.fullDisplay ?? `${kpi.prefix}${kpi.value}${kpi.suffix}`}</span>
+                      </p>
+                      <div className={cn("flex items-center gap-1 text-xs mt-1", trend.positive ? "text-ok" : "text-risk")}>
+                        {trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {trend.value}%
+                      </div>
+                    </GlassCardContent>
+                  </GlassCard>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {!hasError && !isLoading && (
+          <Tabs defaultValue="overview">
+            <TabsList className="flex flex-wrap">
+              <TabsTrigger value="overview" className="gap-2"><BarChart3 className="h-4 w-4" />Visão Geral</TabsTrigger>
+              <TabsTrigger value="funnel" className="gap-2"><Target className="h-4 w-4" />Funil</TabsTrigger>
+              <TabsTrigger value="investment" className="gap-2"><DollarSign className="h-4 w-4" />Investimento</TabsTrigger>
+            </TabsList>
 
           <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -144,29 +340,35 @@ export default function Reports() {
                   <GlassCardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5" />Origem dos Leads</GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent>
-                  <div className="h-64 flex items-center">
-                    <div className="w-1/2">
-                      <ResponsiveContainer width="100%" height={200}>
-                        <RechartsPieChart>
-                          <Pie data={sourceData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
-                            {sourceData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
-                          </Pie>
-                          <Tooltip />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
+                  {sourceData.length === 0 ? (
+                    <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+                      Sem dados de origem no período.
                     </div>
-                    <div className="w-1/2 space-y-2">
-                      {sourceData.map(source => (
-                        <div key={source.name} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }} />
-                            <span className="text-sm">{source.name}</span>
+                  ) : (
+                    <div className="h-64 flex items-center">
+                      <div className="w-1/2">
+                        <ResponsiveContainer width="100%" height={200}>
+                          <RechartsPieChart>
+                            <Pie data={sourceData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
+                              {sourceData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                            </Pie>
+                            <Tooltip />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="w-1/2 space-y-2">
+                        {sourceData.map(source => (
+                          <div key={source.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }} />
+                              <span className="text-sm">{source.name}</span>
+                            </div>
+                            <span className="text-sm font-medium">{source.percentage}%</span>
                           </div>
-                          <span className="text-sm font-medium">{source.value}%</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </GlassCardContent>
               </GlassCard>
             </div>
@@ -230,21 +432,23 @@ export default function Reports() {
               <GlassCard>
                 <GlassCardContent className="p-6 text-center">
                   <DollarSign className="h-10 w-10 text-primary mx-auto mb-2" />
-                  <p className="text-3xl font-bold">R$ 11.800</p>
+                  <p className="text-3xl font-bold">{formatCompactCurrency(totalSpent)}</p>
                   <p className="text-sm text-muted-foreground">Total Investido</p>
                 </GlassCardContent>
               </GlassCard>
               <GlassCard>
                 <GlassCardContent className="p-6 text-center">
                   <TrendingUp className="h-10 w-10 text-ok mx-auto mb-2" />
-                  <p className="text-3xl font-bold">R$ 46.500</p>
+                  <p className="text-3xl font-bold">{formatCompactCurrency(totalSpent * 3)}</p>
                   <p className="text-sm text-muted-foreground">Retorno Estimado</p>
                 </GlassCardContent>
               </GlassCard>
               <GlassCard>
                 <GlassCardContent className="p-6 text-center">
                   <Target className="h-10 w-10 text-purple-500 mx-auto mb-2" />
-                  <p className="text-3xl font-bold">3.9x</p>
+                  <p className="text-3xl font-bold">
+                    {totalSpent > 0 ? `${(totalSpent * 3 / totalSpent).toFixed(1)}x` : "0x"}
+                  </p>
                   <p className="text-sm text-muted-foreground">ROAS</p>
                 </GlassCardContent>
               </GlassCard>
@@ -268,7 +472,8 @@ export default function Reports() {
               </GlassCardContent>
             </GlassCard>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        )}
       </div>
     </AppLayout>
   );

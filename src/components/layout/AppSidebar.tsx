@@ -7,7 +7,8 @@ import {
   BarChart3,
   FileText,
   ChevronRight,
-  Building2
+  Building2,
+  LogOut
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 const mainNavItems = [
   { title: "Today", url: "/", icon: Zap },
@@ -40,6 +43,8 @@ const settingsNavItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
+  const queryClient = useQueryClient();
+  const { signOut } = useAuth();
   const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => {
@@ -144,6 +149,16 @@ export function AppSidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">Admin</p>
               <p className="text-xs text-muted-foreground truncate">admin@velocity.io</p>
+              <button
+                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                onClick={async () => {
+                  await signOut();
+                  queryClient.clear();
+                }}
+              >
+                <LogOut className="h-3 w-3" />
+                Sair
+              </button>
             </div>
           )}
         </div>

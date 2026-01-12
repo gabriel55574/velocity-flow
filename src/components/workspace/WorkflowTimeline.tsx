@@ -1,37 +1,131 @@
 import { ModuleCard } from "./ModuleCard";
-import { mockWorkflowModules } from "@/data/mockData";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { Progress } from "@/components/ui/progress";
-import { GitBranch, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { GitBranch, CheckCircle2, Clock, AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
+import { useClient } from "@/hooks/useClients";
+import { useClientDefaultWorkspace } from "@/hooks/useWorkspaces";
+import { useDeleteWorkflow, useWorkflows } from "@/hooks/useWorkflows";
+import { CreateWorkflowDialog } from "@/components/dialogs/workflows/CreateWorkflowDialog";
+import { CreateModuleDialog } from "@/components/dialogs/modules/CreateModuleDialog";
+import { useMemo, useState } from "react";
 
-export function WorkflowTimeline() {
-    const modules = mockWorkflowModules;
+interface WorkflowTimelineProps {
+    clientId: string;
+}
 
-    // Calculate overall progress
-    const totalProgress = Math.round(
-        modules.reduce((acc, m) => acc + m.progress, 0) / modules.length
-    );
+export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
+    const { data: client } = useClient(clientId);
+    const agencyId = client?.agency_id || undefined;
+    const { data: workspace, isLoading: workspaceLoading, error: workspaceError } = useClientDefaultWorkspace(clientId);
+    const workspaceId = workspace?.id || "";
+    const { data: workflows, isLoading: workflowsLoading, error: workflowsError } = useWorkflows(workspaceId);
+    const deleteWorkflow = useDeleteWorkflow();
+    const [createWorkflowOpen, setCreateWorkflowOpen] = useState(false);
+    const [createModuleOpen, setCreateModuleOpen] = useState(false);
 
-    // Count by status
+    const activeWorkflow = workflows?.[0];
+    const modules = activeWorkflow?.modules || [];
+    const isLoading = workspaceLoading || workflowsLoading;
+    const hasError = Boolean(workspaceError || workflowsError);
+
+    const enriched = (modules || []).map((module: any) => {
+        const steps = module?.steps || [];
+        const totalSteps = steps.length || 0;
+        const doneSteps = steps.filter((s: any) => s.status === 'done').length;
+        const blockedSteps = steps.some((s: any) => s.status === 'blocked');
+        const progress = totalSteps ? Math.round((doneSteps / totalSteps) * 100) : 0;
+
+        const status =
+            blockedSteps ? 'blocked'
+                : progress === 0 ? 'not_started'
+                    : progress === 100 ? 'done'
+                        : 'in_progress';
+
+        return {
+            ...module,
+            progress,
+            status,
+        };
+    });
+
+    const totalProgress = enriched.length > 0
+        ? Math.round(enriched.reduce((acc, m: any) => acc + (m.progress || 0), 0) / enriched.length)
+        : 0;
+
     const statusCounts = {
-        done: modules.filter(m => m.status === "done").length,
-        in_progress: modules.filter(m => m.status === "in_progress").length,
-        blocked: modules.filter(m => m.status === "blocked").length,
-        not_started: modules.filter(m => m.status === "not_started").length,
+        done: enriched.filter((m: any) => m.status === "done").length,
+        in_progress: enriched.filter((m: any) => m.status === "in_progress").length,
+        blocked: enriched.filter((m: any) => m.status === "blocked").length,
+        not_started: enriched.filter((m: any) => m.status === "not_started").length,
     };
 
-    // Find current active module
-    const activeModule = modules.find(m => m.status === "in_progress" || m.status === "blocked");
+    const activeModule = enriched.find((m: any) => m.status === "in_progress" || m.status === "blocked");
+    const nextModuleOrder = useMemo(() => {
+        if (!modules.length) return 0;
+        const maxOrder = Math.max(...modules.map((module: any) => module.order_index ?? 0));
+        return maxOrder + 1;
+    }, [modules]);
+
+    const handleDeleteWorkflow = async () => {
+        if (!activeWorkflow) return;
+        const confirmed = window.confirm("Excluir workflow? Essa ação não pode ser desfeita.");
+        if (!confirmed) return;
+        await deleteWorkflow.mutateAsync(activeWorkflow.id);
+    };
 
     return (
         <div className="space-y-6">
+            {isLoading && (
+                <GlassCard>
+                    <GlassCardContent className="p-6 flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Carregando workflow...
+                    </GlassCardContent>
+                </GlassCard>
+            )}
+            {hasError && (
+                <GlassCard>
+                    <GlassCardContent className="p-6 text-center text-muted-foreground">
+                        <p>Erro ao carregar workflow. Tente novamente.</p>
+                    </GlassCardContent>
+                </GlassCard>
+            )}
+            {!isLoading && !activeWorkflow && (
+                <GlassCard>
+                    <GlassCardContent className="p-6 text-center text-muted-foreground">
+                        <p>Nenhum workflow encontrado para este cliente.</p>
+                        <Button className="mt-4 gap-2" onClick={() => setCreateWorkflowOpen(true)}>
+                            <Plus className="h-4 w-4" />
+                            Criar Workflow
+                        </Button>
+                    </GlassCardContent>
+                </GlassCard>
+            )}
             {/* Summary Card */}
-            <GlassCard>
+            {activeWorkflow && (
+                <GlassCard>
                 <GlassCardHeader>
-                    <GlassCardTitle className="flex items-center gap-2 text-base">
-                        <GitBranch className="h-5 w-5 text-primary" />
-                        Progresso do Workflow
-                    </GlassCardTitle>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <GlassCardTitle className="flex items-center gap-2 text-base">
+                            <GitBranch className="h-5 w-5 text-primary" />
+                            {activeWorkflow.name || "Progresso do Workflow"}
+                        </GlassCardTitle>
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => setCreateModuleOpen(true)}>
+                                <Plus className="h-4 w-4" />
+                                Novo Módulo
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => setCreateWorkflowOpen(true)}>
+                                <Plus className="h-4 w-4" />
+                                Novo Workflow
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={handleDeleteWorkflow}>
+                                <Trash2 className="h-4 w-4" />
+                                Excluir
+                            </Button>
+                        </div>
+                    </div>
                 </GlassCardHeader>
                 <GlassCardContent>
                     <div className="flex items-center gap-4 mb-4">
@@ -44,7 +138,7 @@ export function WorkflowTimeline() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center p-3 rounded-xl bg-emerald-500/10">
                             <CheckCircle2 className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
                             <p className="text-lg font-bold">{statusCounts.done}</p>
@@ -70,24 +164,45 @@ export function WorkflowTimeline() {
                     </div>
                 </GlassCardContent>
             </GlassCard>
+            )}
 
             {/* Timeline */}
-            <GlassCard>
+            {activeWorkflow && (
+                <GlassCard>
                 <GlassCardHeader>
                     <GlassCardTitle className="text-base">
-                        Módulos do Workflow ({modules.length})
+                        Módulos do Workflow ({enriched.length})
                     </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent className="space-y-3">
-                    {modules.map((module) => (
+                    {enriched.map((module: any) => (
                         <ModuleCard
                             key={module.id}
                             module={module}
                             isActive={activeModule?.id === module.id}
+                            agencyId={agencyId}
                         />
                     ))}
                 </GlassCardContent>
             </GlassCard>
+            )}
+
+            {workspaceId && (
+                <CreateWorkflowDialog
+                    open={createWorkflowOpen}
+                    onOpenChange={setCreateWorkflowOpen}
+                    workspaceId={workspaceId}
+                />
+            )}
+
+            {activeWorkflow?.id && (
+                <CreateModuleDialog
+                    open={createModuleOpen}
+                    onOpenChange={setCreateModuleOpen}
+                    workflowId={activeWorkflow.id}
+                    nextOrder={nextModuleOrder}
+                />
+            )}
         </div>
     );
 }

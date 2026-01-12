@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [portalType, setPortalType] = useState<'agency' | 'client'>('agency');
@@ -24,20 +26,28 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - will be replaced with Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo ao Velocity Agency OS",
-      });
+    const { error } = await signIn(formData.email, formData.password);
+    setIsLoading(false);
 
-      if (portalType === 'agency') {
-        navigate('/');
-      } else {
-        navigate('/client/dashboard');
-      }
-    }, 1000);
+    if (error) {
+      toast({
+        title: "Erro ao entrar",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Login realizado!",
+      description: "Bem-vindo ao Velocity Agency OS",
+    });
+
+    if (portalType === 'agency') {
+      navigate('/');
+    } else {
+      navigate('/client/dashboard');
+    }
   };
 
   return (

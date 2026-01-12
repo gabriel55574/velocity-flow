@@ -12,6 +12,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  clientId: string | null;
+  setClientId: (id: string | null) => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -23,6 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [clientId, setClientId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('current_client_id');
+  });
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -49,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
+    if (!error) {
+      // reset client selection on new login
+      setClientId(null);
+      localStorage.removeItem('current_client_id');
+    }
     return { error: error as Error | null };
   };
 
@@ -67,10 +78,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setClientId(null);
+    localStorage.removeItem('current_client_id');
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, clientId, setClientId: (id) => {
+      setClientId(id);
+      if (id) localStorage.setItem('current_client_id', id);
+      else localStorage.removeItem('current_client_id');
+    }, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

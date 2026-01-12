@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Step = 'request' | 'sent' | 'reset';
 
@@ -21,11 +22,26 @@ export default function ResetPassword() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep('sent');
-    }, 1000);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStep('sent');
+    toast({
+      title: "Email enviado!",
+      description: "Verifique sua caixa de entrada para redefinir a senha.",
+    });
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -42,15 +58,24 @@ export default function ResetPassword() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    const { error } = await supabase.auth.updateUser({ password: passwords.password });
+
+    setIsLoading(false);
+
+    if (error) {
       toast({
-        title: "Senha redefinida!",
-        description: "Você já pode fazer login com a nova senha",
+        title: "Erro ao redefinir",
+        description: error.message,
+        variant: "destructive",
       });
-      navigate('/login');
-    }, 1000);
+      return;
+    }
+
+    toast({
+      title: "Senha redefinida!",
+      description: "Você já pode fazer login com a nova senha",
+    });
+    navigate('/login');
   };
 
   return (

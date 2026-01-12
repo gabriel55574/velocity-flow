@@ -43,6 +43,7 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+const UNASSIGNED_VALUE = "unassigned";
 
 interface CreateLeadDialogProps {
     open: boolean;
@@ -206,14 +207,14 @@ export function CreateLeadDialog({
                         <div className="space-y-2">
                             <Label htmlFor="assigned_to">Responsável</Label>
                             <Select
-                                value={form.watch('assigned_to') || ''}
-                                onValueChange={(value) => form.setValue('assigned_to', value)}
+                                value={form.watch('assigned_to') || UNASSIGNED_VALUE}
+                                onValueChange={(value) => form.setValue('assigned_to', value === UNASSIGNED_VALUE ? '' : value)}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecionar..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Não atribuído</SelectItem>
+                                    <SelectItem value={UNASSIGNED_VALUE}>Não atribuído</SelectItem>
                                     {teamMembers?.map((member) => (
                                         <SelectItem key={member.id} value={member.id}>
                                             {member.full_name}
