@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useProjectModules } from "@/hooks/useWorkflows";
+import type { Database } from "@/types/database";
 
 interface SectionProps {
     title: string;
@@ -53,6 +54,9 @@ interface StrategyTabProps {
 
 export function StrategyTab({ clientId }: StrategyTabProps) {
     const { data: modules, isLoading } = useProjectModules({ client_id: clientId });
+    const modulesList = (modules ?? []) as (Database["public"]["Tables"]["modules"]["Row"] & {
+        steps?: Database["public"]["Tables"]["steps"]["Row"][];
+    })[];
 
     if (isLoading) {
         return (
@@ -63,7 +67,7 @@ export function StrategyTab({ clientId }: StrategyTabProps) {
         );
     }
 
-    if (!modules || modules.length === 0) {
+    if (modulesList.length === 0) {
         return (
             <div className="text-center py-24 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -74,7 +78,7 @@ export function StrategyTab({ clientId }: StrategyTabProps) {
 
     return (
         <div className="space-y-4">
-            {modules.map((module: any) => (
+            {modulesList.map((module) => (
                 <CollapsibleSection
                     key={module.id}
                     title={module.name}
@@ -88,7 +92,7 @@ export function StrategyTab({ clientId }: StrategyTabProps) {
                             )}
                             {module.steps && module.steps.length > 0 && (
                                 <ul className="space-y-2">
-                                    {(module.steps as any[]).map((step: any) => (
+                                    {module.steps.map((step) => (
                                         <li key={step.id} className="flex items-start gap-2 text-sm">
                                             <CheckCircle2 className={`h-4 w-4 mt-0.5 flex-shrink-0 ${step.status === 'done' ? 'text-emerald-500' : 'text-muted-foreground'}`} />
                                             <span>{step.name}</span>

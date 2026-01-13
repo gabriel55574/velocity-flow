@@ -48,6 +48,11 @@ import { CreateWorkspaceDialog } from "@/components/dialogs/workspaces/CreateWor
 import { EditWorkspaceDialog } from "@/components/dialogs/workspaces/EditWorkspaceDialog";
 import type { Database } from "@/types/database";
 
+type AuthError = { status?: number; message?: string; code?: string };
+type WorkspaceWithWorkflows = Database["public"]["Tables"]["workspaces"]["Row"] & {
+  workflows?: Database["public"]["Tables"]["workflows"]["Row"][];
+};
+
 export function ClientWorkspace() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,9 +77,10 @@ export function ClientWorkspace() {
     );
   }
 
-  const isAuthError = [clientError, campaignsError, leadsError].some(
-    (e: any) => e?.status === 401 || e?.message?.includes("JWT") || e?.code === "PGRST301"
-  );
+  const isAuthError = [clientError, campaignsError, leadsError].some((error) => {
+    const err = error as AuthError | null | undefined;
+    return err?.status === 401 || err?.message?.includes("JWT") || err?.code === "PGRST301";
+  });
 
   if (isAuthError) {
     return (
@@ -292,7 +298,7 @@ export function ClientWorkspace() {
                     Erro ao carregar workspaces. Tente novamente.
                   </div>
                 ) : workspaces && workspaces.length > 0 ? (
-                  workspaces.map((workspace: any) => (
+                  (workspaces as WorkspaceWithWorkflows[]).map((workspace) => (
                     <div
                       key={workspace.id}
                       className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"

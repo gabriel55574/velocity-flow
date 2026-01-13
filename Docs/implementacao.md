@@ -1374,6 +1374,20 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 - ✅ Fallback do módulo ativo para o primeiro quando nenhum está marcado
 - ✅ Assinatura do `ModuleCard` alinhada com props de avanço
 
+### 10 jan 2026 20:30 — Lint errors resolvidos
+
+- ✅ Tipagens explícitas (sem `any`) em ClientWorkspace, MediaTab, DataTab, StrategyTab e WorkflowTimeline
+- ✅ Ajuste de tipos em ManageAccessDialog e Settings (audit logs)
+- ✅ Correções de tipagem nos componentes UI (`command`, `textarea`)
+- ✅ Tailwind config migrado para import ESM do plugin
+
+### 10 jan 2026 20:45 — Lint warnings resolvidos
+
+- ✅ Variants de `button`/`toggle` extraídos para módulos dedicados
+- ✅ Removidos exports não usados (`badge`, `navigation-menu`, `sonner`, `form`)
+- ✅ `useSidebar` e `useAuth` movidos para módulos próprios
+- ✅ useMemo estabilizado em ContentTab, ModuleCard e WorkflowTimeline
+
 ### 10 jan 2026 11:27 — Integração de Dialogs P1
 
 - ✅ Integrados `CreateTemplateDialog`/`EditTemplateDialog` no `CRMTab.tsx`

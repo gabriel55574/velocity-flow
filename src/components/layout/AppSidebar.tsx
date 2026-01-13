@@ -23,9 +23,9 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useSidebar } from "@/components/ui/sidebar-context";
+import { useAuth } from "@/contexts/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const mainNavItems = [

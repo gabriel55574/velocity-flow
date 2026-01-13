@@ -17,6 +17,7 @@ import { useState } from "react";
 import { CreateCampaignDialog, EditCampaignDialog } from "@/components/dialogs";
 
 type Campaign = Database["public"]["Tables"]["campaigns"]["Row"];
+type CampaignWithMetrics = Campaign & { conversions?: number | null };
 
 const platformColors = {
     meta: "bg-blue-500",
@@ -25,7 +26,7 @@ const platformColors = {
 };
 
 interface CampaignCardProps {
-    campaign: Campaign;
+    campaign: CampaignWithMetrics;
     onClick?: () => void;
 }
 
@@ -33,7 +34,7 @@ function CampaignCard({ campaign, onClick }: CampaignCardProps) {
     const isActive = campaign.status === "active";
     const budgetDaily = Number(campaign.budget) || 0;
     const spentTotal = Number(campaign.spent) || 0;
-    const leadsCount = (campaign as any).conversions || 0;
+    const leadsCount = campaign.conversions ?? 0;
     const cpl = leadsCount > 0 ? spentTotal / leadsCount : 0;
 
     const budgetProgress = budgetDaily > 0
@@ -121,11 +122,12 @@ export function MediaTab({ clientId }: MediaTabProps) {
         );
     }
 
-    const activeCampaigns = campaigns?.filter(c => c.status === "active") || [];
-    const totalSpent = campaigns?.reduce((acc, c) => acc + (Number(c.spent) || 0), 0) || 0;
-    const totalLeads = campaigns?.reduce((acc, c) => acc + ((c as any).conversions || 0), 0) || 0;
+    const campaignsList = (campaigns || []) as CampaignWithMetrics[];
+    const activeCampaigns = campaignsList.filter((campaign) => campaign.status === "active");
+    const totalSpent = campaignsList.reduce((acc, campaign) => acc + (Number(campaign.spent) || 0), 0);
+    const totalLeads = campaignsList.reduce((acc, campaign) => acc + (campaign.conversions ?? 0), 0);
     const avgCPL = totalLeads > 0 ? totalSpent / totalLeads : 0;
-    const campaignsCount = campaigns?.length || 0;
+    const campaignsCount = campaignsList.length;
 
     return (
         <div className="space-y-6">
@@ -203,9 +205,9 @@ export function MediaTab({ clientId }: MediaTabProps) {
                     </div>
                 </GlassCardHeader>
                 <GlassCardContent>
-                    {campaigns && campaigns.length > 0 ? (
+                    {campaignsList.length > 0 ? (
                         <div className="grid md:grid-cols-2 gap-4">
-                            {campaigns.map((campaign) => (
+                            {campaignsList.map((campaign) => (
                                 <CampaignCard
                                     key={campaign.id}
                                     campaign={campaign}

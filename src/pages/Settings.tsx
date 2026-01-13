@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentUser } from "@/hooks/useUsers";
 import { useAuditLogs } from "@/hooks/useAuditLogs";
+import type { Database } from "@/types/database";
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador', cs: 'Customer Success', editor: 'Editor de Conteúdo', media: 'Media Buyer', analyst: 'Analista', viewer: 'Visualizador',
@@ -29,6 +30,10 @@ const integrations = [
   { id: 'supabase', name: 'Supabase', description: 'Banco de dados', status: 'connected', icon: '🗄️' },
   { id: 'whatsapp', name: 'WhatsApp API', description: 'Mensagens automatizadas', status: 'disconnected', icon: '💬' },
 ];
+
+type AuditLogWithUser = Database["public"]["Tables"]["audit_logs"]["Row"] & {
+  user?: Database["public"]["Tables"]["users_profile"]["Row"] | null;
+};
 
 export default function Settings() {
   const { toast } = useToast();
@@ -228,8 +233,8 @@ export default function Settings() {
                     </TableHeader>
                     <TableBody>
                       {auditLogs && auditLogs.length > 0 ? (
-                        auditLogs
-                          .filter((log: any) => {
+                        (auditLogs as AuditLogWithUser[])
+                          .filter((log) => {
                             if (!auditSearch) return true;
                             const haystack = [
                               log.action,
@@ -243,7 +248,7 @@ export default function Settings() {
                               .toLowerCase();
                             return haystack.includes(auditSearch.toLowerCase());
                           })
-                          .map((log: any) => (
+                          .map((log) => (
                             <TableRow key={log.id}>
                               <TableCell className="whitespace-nowrap">
                                 {log.created_at

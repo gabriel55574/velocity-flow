@@ -29,20 +29,27 @@ import { useCurrentUser } from "@/hooks/useUsers";
 import { validateGate } from "@/lib/workflowEngine";
 import { useToast } from "@/hooks/use-toast";
 
-interface ModuleCardProps {
-    module: any;
-    isActive?: boolean;
-    agencyId?: string;
-    onAdvanceModule?: () => Promise<void>;
-    nextModuleName?: string;
-}
-
 type Step = Database["public"]["Tables"]["steps"]["Row"];
 type Gate = Database["public"]["Tables"]["gates"]["Row"];
 type ChecklistItem = Database["public"]["Tables"]["checklist_items"]["Row"];
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type GateStatusType = Database["public"]["Enums"]["gate_status"];
 type StepWithChecklist = Step & { checklist_items?: ChecklistItem[] };
+type Module = Database["public"]["Tables"]["modules"]["Row"] & {
+    title?: string | null;
+    progress?: number | null;
+    status?: "not_started" | "in_progress" | "blocked" | "done";
+    steps?: StepWithChecklist[];
+    gates?: Gate[];
+};
+
+interface ModuleCardProps {
+    module: Module;
+    isActive?: boolean;
+    agencyId?: string;
+    onAdvanceModule?: () => Promise<void>;
+    nextModuleName?: string;
+}
 
 const statusConfig = {
     not_started: {
@@ -94,7 +101,7 @@ export function ModuleCard({
     const status = module.status || 'not_started';
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
     const StatusIcon = config.icon;
-    const steps = (module.steps || []) as StepWithChecklist[];
+    const steps = useMemo(() => (module.steps || []) as StepWithChecklist[], [module.steps]);
     const gates = (module.gates || []) as Gate[];
     const title = module.name || module.title || 'Módulo';
     const progress = module.progress || 0;
@@ -374,10 +381,11 @@ export function ModuleCard({
                                                             <Checkbox
                                                                 checked={item.is_completed || false}
                                                                 onCheckedChange={(checked) => {
+                                                                    const isChecked = checked === true;
                                                                     toggleChecklistItem.mutateAsync({
                                                                         id: item.id,
-                                                                        is_completed: Boolean(checked),
-                                                                        completed_by: Boolean(checked) ? currentUser?.id : undefined,
+                                                                        is_completed: isChecked,
+                                                                        completed_by: isChecked ? currentUser?.id : undefined,
                                                                     });
                                                                 }}
                                                             />

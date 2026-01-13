@@ -9,10 +9,25 @@ import { useDeleteWorkflow, useUpdateModule, useWorkflows } from "@/hooks/useWor
 import { CreateWorkflowDialog } from "@/components/dialogs/workflows/CreateWorkflowDialog";
 import { CreateModuleDialog } from "@/components/dialogs/modules/CreateModuleDialog";
 import { useMemo, useState } from "react";
+import type { Database } from "@/types/database";
 
 interface WorkflowTimelineProps {
     clientId: string;
 }
+
+type ModuleStatus = "not_started" | "in_progress" | "blocked" | "done";
+type Step = Database["public"]["Tables"]["steps"]["Row"];
+type Gate = Database["public"]["Tables"]["gates"]["Row"];
+type Module = Database["public"]["Tables"]["modules"]["Row"] & {
+    steps?: Step[];
+    gates?: Gate[];
+    progress?: number;
+    status?: ModuleStatus;
+};
+type Workflow = Database["public"]["Tables"]["workflows"]["Row"] & {
+    modules?: Module[];
+};
+type EnrichedModule = Module & { progress: number; status: ModuleStatus };
 
 export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
     const { data: client } = useClient(clientId);
@@ -25,23 +40,23 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
     const [createWorkflowOpen, setCreateWorkflowOpen] = useState(false);
     const [createModuleOpen, setCreateModuleOpen] = useState(false);
 
-    const activeWorkflow = workflows?.[0];
-    const modules = activeWorkflow?.modules || [];
+    const activeWorkflow = (workflows?.[0] ?? undefined) as Workflow | undefined;
+    const modules = useMemo(() => activeWorkflow?.modules || [], [activeWorkflow?.modules]);
     const isLoading = workspaceLoading || workflowsLoading;
     const hasError = Boolean(workspaceError || workflowsError);
 
-    const enriched = (modules || []).map((module: any) => {
+    const enriched: EnrichedModule[] = (modules || []).map((module) => {
         const steps = module?.steps || [];
         const totalSteps = steps.length || 0;
-        const doneSteps = steps.filter((s: any) => s.status === 'done').length;
-        const blockedSteps = steps.some((s: any) => s.status === 'blocked');
+        const doneSteps = steps.filter((step) => step.status === "done").length;
+        const blockedSteps = steps.some((step) => step.status === "blocked");
         const progress = totalSteps ? Math.round((doneSteps / totalSteps) * 100) : 0;
 
         const status =
-            blockedSteps ? 'blocked'
-                : progress === 0 ? 'not_started'
-                    : progress === 100 ? 'done'
-                        : 'in_progress';
+            blockedSteps ? "blocked"
+                : progress === 0 ? "not_started"
+                    : progress === 100 ? "done"
+                        : "in_progress";
 
         return {
             ...module,
@@ -51,27 +66,27 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
     });
 
     const totalProgress = enriched.length > 0
-        ? Math.round(enriched.reduce((acc, m: any) => acc + (m.progress || 0), 0) / enriched.length)
+        ? Math.round(enriched.reduce((acc, module) => acc + (module.progress || 0), 0) / enriched.length)
         : 0;
 
     const statusCounts = {
-        done: enriched.filter((m: any) => m.status === "done").length,
-        in_progress: enriched.filter((m: any) => m.status === "in_progress").length,
-        blocked: enriched.filter((m: any) => m.status === "blocked").length,
-        not_started: enriched.filter((m: any) => m.status === "not_started").length,
+        done: enriched.filter((module) => module.status === "done").length,
+        in_progress: enriched.filter((module) => module.status === "in_progress").length,
+        blocked: enriched.filter((module) => module.status === "blocked").length,
+        not_started: enriched.filter((module) => module.status === "not_started").length,
     };
 
     const orderedModules = useMemo(
-        () => [...enriched].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+        () => [...enriched].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
         [enriched]
     );
     const activeModule =
-        orderedModules.find((m: any) => m.is_active) ||
-        orderedModules.find((m: any) => m.status === "in_progress" || m.status === "blocked") ||
+        orderedModules.find((module) => module.is_active) ||
+        orderedModules.find((m) => m.status === "in_progress" || m.status === "blocked") ||
         orderedModules[0];
     const nextModuleOrder = useMemo(() => {
         if (!modules.length) return 0;
-        const maxOrder = Math.max(...modules.map((module: any) => module.order_index ?? 0));
+        const maxOrder = Math.max(...modules.map((module) => module.order_index ?? 0));
         return maxOrder + 1;
     }, [modules]);
 
@@ -188,7 +203,7 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
                     </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent className="space-y-3">
-                    {orderedModules.map((module: any, index: number) => {
+                    {orderedModules.map((module, index) => {
                         const nextModule = orderedModules[index + 1];
                         const isActive = activeModule?.id === module.id;
                         return (

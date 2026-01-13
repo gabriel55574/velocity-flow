@@ -23,6 +23,9 @@ import type { Database } from "@/types/database";
 import { GrantAccessDialog } from "./GrantAccessDialog";
 
 type ClientUserRole = Database["public"]["Enums"]["client_user_role"];
+type AccessWithUser = Database["public"]["Tables"]["clients_users"]["Row"] & {
+    user?: Database["public"]["Tables"]["users_profile"]["Row"] | null;
+};
 
 interface ManageAccessDialogProps {
     open: boolean;
@@ -86,9 +89,9 @@ export function ManageAccessDialog({ open, onOpenChange, clientId, agencyId }: M
                     {!isLoading && !error && (
                         <div className="space-y-3">
                             {accesses && accesses.length > 0 ? (
-                                accesses.map((access) => {
+                                (accesses as AccessWithUser[]).map((access) => {
                                     const role = (access.role as ClientUserRole) || "viewer";
-                                    const user = (access as any).user || {};
+                                    const user = access.user || {};
                                     const Icon = ROLE_LABEL[role]?.icon || Shield;
                                     return (
                                         <div

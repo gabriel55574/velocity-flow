@@ -590,6 +590,8 @@ velocity-flow/
 | 10/01/2026 PM | Client Workspace | Aba Workflows com timeline ativada |
 | 10/01/2026 PM | Workflow | Avanço bloqueado por gate no módulo ativo |
 | 10/01/2026 PM | Workflow | ModuleCard com props de avanço corrigidas |
+| 10/01/2026 PM | Lint | Erros de tipagem resolvidos em UI e workflow |
+| 10/01/2026 PM | Lint | Warnings eliminados (variants/hooks/useMemo) |
 
 ---
 

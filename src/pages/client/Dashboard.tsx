@@ -17,7 +17,7 @@ import {
 import { Link } from "react-router-dom";
 import { usePendingApprovals } from "@/hooks/useApprovals";
 import { useAssets } from "@/hooks/useAssets";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useUserClients } from "@/hooks/useClientAccess";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 

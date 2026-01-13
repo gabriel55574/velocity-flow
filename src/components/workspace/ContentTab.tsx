@@ -97,7 +97,7 @@ export function ContentTab({ clientId }: ContentTabProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedCreative, setSelectedCreative] = useState<Database["public"]["Tables"]["creatives"]["Row"] | null>(null);
 
-    const creativesList = creatives || [];
+    const creativesList = useMemo(() => creatives || [], [creatives]);
     const creativesByDay = useMemo(() => {
         const map = new Map<number, Database["public"]["Tables"]["creatives"]["Row"]>();
         creativesList.forEach((creative) => {
@@ -111,10 +111,10 @@ export function ContentTab({ clientId }: ContentTabProps) {
     }, [creativesList]);
 
     const statusGroups = {
-        draft: (creatives || []).filter(c => c.status === "draft"),
-        review: (creatives || []).filter(c => c.status === "pending_approval"),
-        approved: (creatives || []).filter(c => c.status === "approved"),
-        published: (creatives || []).filter(c => c.status === "published"),
+        draft: creativesList.filter((creative) => creative.status === "draft"),
+        review: creativesList.filter((creative) => creative.status === "pending_approval"),
+        approved: creativesList.filter((creative) => creative.status === "approved"),
+        published: creativesList.filter((creative) => creative.status === "published"),
     };
 
     return (

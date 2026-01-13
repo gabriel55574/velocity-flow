@@ -35,11 +35,13 @@ const statusConfig = {
     validated: { icon: CheckCircle2, color: "text-emerald-500", label: "Validado" },
 };
 
+type ChecklistStatus = "done" | "in_progress" | "pending" | "validated";
+
 interface ChecklistItemProps {
     item: {
         id: string;
         name: string;
-        status: any;
+        status: ChecklistStatus;
     };
 }
 
@@ -65,6 +67,7 @@ type KPIValue = Database["public"]["Tables"]["kpi_values"]["Row"] & {
 
 type KPIDefinition = Database["public"]["Tables"]["kpi_definitions"]["Row"];
 type Experiment = Database["public"]["Tables"]["experiments"]["Row"];
+type TrackingStep = Database["public"]["Tables"]["steps"]["Row"];
 
 interface DataTabProps {
     clientId: string;
@@ -92,6 +95,13 @@ export function DataTab({ clientId }: DataTabProps) {
     const kpiValuesList = kpiValues || [];
     const kpiDefinitionsList = kpiDefinitions || [];
 
+    const normalizeStatus = (status: Database["public"]["Enums"]["task_status"] | null): ChecklistStatus => {
+        if (status === "done") return "done";
+        if (status === "doing" || status === "review") return "in_progress";
+        if (status === "blocked") return "pending";
+        return "pending";
+    };
+
     const experimentStatus = useMemo(
         () => ({
             planned: { label: "Planejado", className: "bg-muted text-muted-foreground" },
@@ -111,7 +121,7 @@ export function DataTab({ clientId }: DataTabProps) {
         );
     }
 
-    const trackingList = trackingItems || [];
+    const trackingList = (trackingItems || []) as TrackingStep[];
     const accessList = accessItems || [];
 
     // Calculate tracking progress
@@ -170,7 +180,14 @@ export function DataTab({ clientId }: DataTabProps) {
                 <GlassCardContent className="space-y-2">
                     {trackingList.length > 0 ? (
                         trackingList.map((item) => (
-                            <ChecklistItem key={item.id} item={item as any} />
+                            <ChecklistItem
+                                key={item.id}
+                                item={{
+                                    id: item.id,
+                                    name: item.name,
+                                    status: normalizeStatus(item.status),
+                                }}
+                            />
                         ))
                     ) : (
                         <div className="text-center py-8 text-muted-foreground">
