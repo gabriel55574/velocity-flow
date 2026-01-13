@@ -1287,6 +1287,27 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 
 ## 10. Changelog de Implementação
 
+### 13 jan 2026 10:05 — Audit logs (RLS insert)
+
+- ✅ Policy `audit_logs_insert` criada para permitir inserts via app
+
+### 13 jan 2026 10:20 — Assets (status + replace)
+
+- ✅ Status do asset editável no dialog (missing/uploaded/validated)
+- ✅ Portal permite trocar arquivo do asset
+- ✅ Portal permite envio de link + troca remove arquivo anterior
+- ✅ Área global de upload removida do portal
+
+### 13 jan 2026 09:50 — Assets pendentes (CreateAssetDialog)
+
+- ✅ Criar asset pendente sem URL/arquivo (status missing)
+- ✅ Checkbox de "pendente" no dialog
+
+### 13 jan 2026 09:35 — Client Workspace (Assets/Aprovações)
+
+- ✅ Abas "Assets" e "Aprovações" habilitadas no `ClientWorkspace`
+- ✅ Conteúdos conectados às tabs com `AssetsTab` e `ApprovalsTab`
+
 ### 10 jan 2026 14:20 — Workflow UI (modules/steps/gates)
 
 - ✅ `ModuleCard` agora suporta ações de CRUD rápidas: criar step, alterar status via Select (backlog/todo/doing/review/done/blocked), excluir step e excluir módulo
@@ -1387,6 +1408,25 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 - ✅ Removidos exports não usados (`badge`, `navigation-menu`, `sonner`, `form`)
 - ✅ `useSidebar` e `useAuth` movidos para módulos próprios
 - ✅ useMemo estabilizado em ContentTab, ModuleCard e WorkflowTimeline
+
+### 10 jan 2026 21:10 — Portal do Cliente (approvals/assets)
+
+- ✅ Aprovações do cliente agora exibem preview real quando `file_url` existe
+- ✅ Upload de assets no portal com Supabase Storage (`assets-public`) e atualização de status
+- ✅ `useUploadAssetFile` para anexar arquivo a asset existente
+- ✅ Metadata de storage salva em `assets.metadata` (bucket/path)
+
+### 10 jan 2026 21:25 — Aprovações com upload
+
+- ✅ Upload de arquivo para `approvals` no CreateApprovalDialog
+- ✅ `useUploadApprovalFile` adicionada no hook de approvals
+- ✅ URL do arquivo salva em `approvals.file_url`
+
+### 10 jan 2026 21:40 — Storage policies + audit logs
+
+- ⚠️ Migration `20260113_add_storage_policies.sql` criada (assets-public/assets-private/approvals)
+- ⚠️ Aplicação via MCP falhou por permissão (`must be owner of table objects`); aplicar manualmente no dashboard
+- ✅ Portal cliente registra audit_logs em aprovações (approve/reject) e assets (upload)
 
 ### 10 jan 2026 11:27 — Integração de Dialogs P1
 

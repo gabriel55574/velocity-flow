@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { useApprovals, useApproveItem, useRejectItem } from "@/hooks/useApprovals";
 import { useCurrentUser } from "@/hooks/useUsers";
 import { useUserClients } from "@/hooks/useClientAccess";
+import { useClient } from "@/hooks/useClients";
+import { useCreateAuditLog } from "@/hooks/useAuditLogs";
 
 const typeIcons: Record<string, React.ElementType> = {
   creative: Image,
@@ -50,9 +52,12 @@ export default function ClientApprovals() {
   const userId = currentUser?.id;
   const { data: clientLinks } = useUserClients(userId || "");
   const clientId = useMemo(() => clientLinks?.[0]?.client_id, [clientLinks]);
+  const { data: client } = useClient(clientId || "");
+  const agencyId = client?.agency_id || "";
   const { data: approvalsData, isLoading, error: approvalsError } = useApprovals(clientId ? { client_id: clientId } : undefined);
   const approveMutation = useApproveItem();
   const rejectMutation = useRejectItem();
+  const createAuditLog = useCreateAuditLog();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
@@ -61,9 +66,22 @@ export default function ClientApprovals() {
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const decidedApprovals = approvals.filter(a => a.status !== 'pending');
 
+  const logApprovalAction = async (action: string, approvalId: string, payload?: Record<string, unknown>) => {
+    if (!currentUser || !agencyId) return;
+    await createAuditLog.mutateAsync({
+      agency_id: agencyId,
+      user_id: currentUser.id,
+      action,
+      entity_type: "approvals",
+      entity_id: approvalId,
+      new_data: payload ?? null,
+    });
+  };
+
   const handleApprove = async (id: string) => {
     if (!currentUser) return;
     await approveMutation.mutateAsync({ id, reviewer_id: currentUser.id });
+    await logApprovalAction("approval_approved", id, { status: "approved" });
     toast({
       title: "Aprovado! ✅",
       description: "O item foi aprovado e a equipe será notificada.",
@@ -85,6 +103,7 @@ export default function ClientApprovals() {
     }
 
     await rejectMutation.mutateAsync({ id, reviewer_id: currentUser.id, feedback: reason });
+    await logApprovalAction("approval_rejected", id, { status: "rejected", feedback: reason });
     toast({
       title: "Reprovado",
       description: "O feedback foi enviado para a equipe.",
@@ -117,6 +136,11 @@ export default function ClientApprovals() {
   const getRequesterLabel = (requesterId?: string | null) => {
     if (!requesterId) return "Equipe";
     return `ID ${requesterId.slice(0, 6)}`;
+  };
+
+  const isImageUrl = (url?: string | null) => {
+    if (!url) return false;
+    return /\.(png|jpe?g|gif|webp)$/i.test(url);
   };
 
   return (
@@ -237,13 +261,34 @@ export default function ClientApprovals() {
 
                     {isExpanded && (
                       <div className="border-t border-border/50 p-4 bg-muted/20 space-y-4">
-                        {/* Preview placeholder */}
-                        <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
-                          <div className="text-center text-muted-foreground">
-                            <Icon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Preview do {typeLabels[approval.type]}</p>
+                        {/* Preview */}
+                        {approval.file_url ? (
+                          isImageUrl(approval.file_url) ? (
+                            <div className="rounded-lg overflow-hidden border border-border/50 bg-muted/30">
+                              <img
+                                src={approval.file_url}
+                                alt={approval.title}
+                                className="w-full max-h-[360px] object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <a
+                              href={approval.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-center rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-6 text-sm text-primary hover:bg-primary/10"
+                            >
+                              Abrir arquivo anexado
+                            </a>
+                          )
+                        ) : (
+                          <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
+                            <div className="text-center text-muted-foreground">
+                              <Icon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">Preview do {typeLabels[approval.type]}</p>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />

@@ -77,8 +77,8 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 Legenda: **—** = não aplicável (seed/manual/backoffice).
 
 ### Pendências do Epic 0 (PDR §11.3)
-- [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets ✅ / policies pendentes)
-- [ ] Confirmar multi-tenant nas telas (RLS já cobre): todas as queries/hooks devem enviar `agency_id`/`client_id` corretos
+- [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets ✅ / policies pendentes; uploads integrados)
+- [x] Confirmar multi-tenant nas telas (RLS já cobre): todas as queries/hooks devem enviar `agency_id`/`client_id` corretos
 - [x] UI de acesso ao portal (clients_users) e integração do `GrantAccessDialog`
 - [x] CRUD básico de workspaces/workflows/modules/steps/gates/checklist_items (UI)
 - [x] UI de gates com `gate_status` (pending/passed/failed/blocked) e condições DoD (JSON)
@@ -296,7 +296,8 @@ Nota: Select "Não atribuído" usa valor sentinela para evitar crash do Radix.
 - [x] Aprovar/Rejeitar/Solicitar Revisão
 - [x] Campo de feedback obrigatório para rejeição
 - [x] Integrar no ApprovalsTab.tsx
-- [ ] Upload de anexos via Storage (bucket approvals)
+- [x] Aba de Aprovações disponível no ClientWorkspace
+- [x] Upload de anexos via Storage (bucket approvals)
 
 ---
 
@@ -312,10 +313,15 @@ Nota: Select "Não atribuído" usa valor sentinela para evitar crash do Radix.
 - [x] Drag-and-drop upload
 - [x] Detecção automática de tipo
 - [x] Suporte a URL externa
+- [x] Criar asset pendente sem arquivo/URL
+- [x] Atualizar status do asset (missing/uploaded/validated)
+- [x] Cliente pode substituir arquivo do asset
+- [x] Portal do cliente permite enviar link do asset
 - [x] Preview de imagem
 - [x] Copiar URL
 - [x] Integrar no AssetsTab.tsx
-- [ ] Buckets e policies do Supabase Storage configurados (assets/approvals)
+- [x] Aba de Assets disponível no ClientWorkspace
+- [x] Buckets e policies do Supabase Storage configurados (assets/approvals)
 - [ ] Upload real funcionando no ambiente
 
 ---
@@ -944,7 +950,7 @@ Use este checklist para acompanhar o progresso:
 
 ---
 
-#### US 5.2 — Aprovar/Reprovar Item ✅ UI | ❌ Backend
+#### US 5.2 — Aprovar/Reprovar Item ⚠️
 **Como** cliente,  
 **Quero** aprovar ou reprovar um item,  
 **Para que** a agência saiba se pode prosseguir.
@@ -953,8 +959,8 @@ Use este checklist para acompanhar o progresso:
 - [x] Lista de aprovações pendentes
 - [x] Preview do item
 - [x] Botões Aprovar/Reprovar
-- [ ] Motivo obrigatório na reprova
-- [ ] Atualizar status no Supabase
+- [x] Motivo obrigatório na reprova
+- [x] Atualizar status no Supabase
 - [ ] Notificar agência
 
 **Arquivos:**
@@ -971,8 +977,8 @@ Use este checklist para acompanhar o progresso:
 **Critérios de Aceite:**
 - [x] Lista de ativos solicitados
 - [x] Área de upload
-- [ ] Upload real para Supabase Storage
-- [ ] Atualizar status para 'uploaded'
+- [x] Upload real para Supabase Storage
+- [x] Atualizar status para 'uploaded'
 - [ ] Notificar agência
 
 **Arquivos:**

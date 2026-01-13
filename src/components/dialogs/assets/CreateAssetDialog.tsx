@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -44,6 +45,7 @@ interface CreateAssetDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     clientId: string;
+    agencyId: string;
     userId: string;
 }
 
@@ -51,6 +53,7 @@ export function CreateAssetDialog({
     open,
     onOpenChange,
     clientId,
+    agencyId,
     userId
 }: CreateAssetDialogProps) {
     const { toast } = useToast();
@@ -59,6 +62,7 @@ export function CreateAssetDialog({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
+    const [markAsPending, setMarkAsPending] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
     const form = useForm<FormData>({
@@ -71,6 +75,9 @@ export function CreateAssetDialog({
     });
 
     const handleFileSelect = (file: File) => {
+        if (markAsPending) {
+            setMarkAsPending(false);
+        }
         setSelectedFile(file);
 
         // Auto-detect type from file
@@ -94,6 +101,9 @@ export function CreateAssetDialog({
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
+        if (markAsPending) {
+            setMarkAsPending(false);
+        }
 
         const file = e.dataTransfer.files[0];
         if (file) {
@@ -103,13 +113,23 @@ export function CreateAssetDialog({
 
     const onSubmit = async (data: FormData) => {
         try {
-            if (uploadMode === 'file' && selectedFile) {
-                await uploadAsset.mutateAsync({
-                    file: selectedFile,
+            if (markAsPending) {
+                await createAsset.mutateAsync({
                     client_id: clientId,
                     name: data.name,
                     type: data.type,
                     created_by: userId,
+                    status: 'missing',
+                });
+            } else if (uploadMode === 'file' && selectedFile) {
+                await uploadAsset.mutateAsync({
+                    file: selectedFile,
+                    client_id: clientId,
+                    agency_id: agencyId,
+                    name: data.name,
+                    type: data.type,
+                    created_by: userId,
+                    visibility: 'public',
                 });
             } else if (uploadMode === 'url' && data.url) {
                 await createAsset.mutateAsync({
@@ -122,7 +142,7 @@ export function CreateAssetDialog({
             } else {
                 toast({
                     title: 'Arquivo ou URL obrigatório',
-                    description: 'Selecione um arquivo ou informe uma URL.',
+                    description: 'Selecione um arquivo, informe uma URL ou marque como pendente.',
                     variant: 'destructive',
                 });
                 return;
@@ -135,6 +155,7 @@ export function CreateAssetDialog({
 
             form.reset();
             setSelectedFile(null);
+            setMarkAsPending(false);
             onOpenChange(false);
         } catch (error) {
             toast({
@@ -174,13 +195,40 @@ export function CreateAssetDialog({
                 </DialogHeader>
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                        <Checkbox
+                            id="pending-asset"
+                            checked={markAsPending}
+                            onCheckedChange={(checked) => {
+                                const isChecked = checked === true;
+                                setMarkAsPending(isChecked);
+                                if (isChecked) {
+                                    setSelectedFile(null);
+                                    form.setValue('url', '');
+                                }
+                            }}
+                        />
+                        <div className="space-y-1">
+                            <Label htmlFor="pending-asset" className="font-medium">
+                                Criar como pendente (sem arquivo)
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                O cliente verá este asset como “faltando” e poderá enviar depois.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Toggle Upload Mode */}
                     <div className="flex gap-2">
                         <Button
                             type="button"
                             variant={uploadMode === 'file' ? 'default' : 'outline'}
                             className="flex-1"
-                            onClick={() => setUploadMode('file')}
+                            onClick={() => {
+                                setMarkAsPending(false);
+                                setUploadMode('file');
+                            }}
+                            disabled={markAsPending}
                         >
                             <Upload className="h-4 w-4 mr-2" />
                             Upload
@@ -189,7 +237,11 @@ export function CreateAssetDialog({
                             type="button"
                             variant={uploadMode === 'url' ? 'default' : 'outline'}
                             className="flex-1"
-                            onClick={() => setUploadMode('url')}
+                            onClick={() => {
+                                setMarkAsPending(false);
+                                setUploadMode('url');
+                            }}
+                            disabled={markAsPending}
                         >
                             <LinkIcon className="h-4 w-4 mr-2" />
                             URL
@@ -197,7 +249,7 @@ export function CreateAssetDialog({
                     </div>
 
                     {/* File Upload Zone */}
-                    {uploadMode === 'file' && (
+                    {!markAsPending && uploadMode === 'file' && (
                         <div
                             className={cn(
                                 "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
@@ -238,7 +290,7 @@ export function CreateAssetDialog({
                     )}
 
                     {/* URL Input */}
-                    {uploadMode === 'url' && (
+                    {!markAsPending && uploadMode === 'url' && (
                         <div className="space-y-2">
                             <Label htmlFor="url">URL</Label>
                             <Input

@@ -20,6 +20,7 @@ import { useAccessValidation } from "@/hooks/useWorkflows";
 import { CreateAssetDialog } from "@/components/dialogs/assets/CreateAssetDialog";
 import { EditAssetDialog } from "@/components/dialogs/assets/EditAssetDialog";
 import { useCurrentUser } from "@/hooks/useUsers";
+import { useClient } from "@/hooks/useClients";
 import type { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
 
@@ -90,6 +91,8 @@ interface AssetsTabProps {
 
 export function AssetsTab({ clientId }: AssetsTabProps) {
     const { data: currentUser } = useCurrentUser();
+    const { data: client } = useClient(clientId);
+    const agencyId = client?.agency_id || "";
     const { data: assets, isLoading: assetsLoading, error: assetsError } = useAssets({ client_id: clientId });
     const { data: accessChecklist, isLoading: accessLoading, error: accessError } = useAccessValidation({ client_id: clientId });
     const [createOpen, setCreateOpen] = useState(false);
@@ -243,6 +246,7 @@ export function AssetsTab({ clientId }: AssetsTabProps) {
                     open={createOpen}
                     onOpenChange={setCreateOpen}
                     clientId={clientId}
+                    agencyId={agencyId}
                     userId={currentUser.id}
                 />
             )}

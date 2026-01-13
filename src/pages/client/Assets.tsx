@@ -1,20 +1,31 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ClientLayout } from "@/components/client-portal/ClientLayout";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Upload, 
   Image, 
   Video, 
   FileText, 
   Key,
+  Link as LinkIcon,
   CheckCircle,
   AlertCircle,
   Clock,
-  Plus,
+  Loader2,
   Instagram,
   Globe,
   MessageCircle,
@@ -22,16 +33,22 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useAssets, useUpdateAsset } from "@/hooks/useAssets";
+import { useAssets, useUploadAssetFile, useUpdateAsset } from "@/hooks/useAssets";
 import { useCurrentUser } from "@/hooks/useUsers";
 import { useUserClients } from "@/hooks/useClientAccess";
 import { useAccessValidation } from "@/hooks/useWorkflows";
-import { Loader2 } from "lucide-react";
+import { useClient } from "@/hooks/useClients";
+import type { Database } from "@/types/database";
+import { useCreateAuditLog } from "@/hooks/useAuditLogs";
 
-const assetTypeConfig = {
+const assetTypeConfig: Record<string, { icon: typeof Image; label: string; description: string }> = {
+  image: { icon: Image, label: 'Imagem', description: 'Imagens em alta resolução (PNG ou JPG)' },
+  video: { icon: Video, label: 'Vídeo', description: 'Vídeos institucionais e depoimentos' },
+  document: { icon: FileText, label: 'Documento', description: 'Termos, contratos e materiais' },
+  link: { icon: FileText, label: 'Link', description: 'Links importantes (drive, site, etc.)' },
+  credential: { icon: Key, label: 'Credencial', description: 'Acessos e credenciais necessárias' },
   logo: { icon: Image, label: 'Logo', description: 'Logo principal em alta resolução (PNG ou SVG)' },
   photo: { icon: Image, label: 'Fotos', description: 'Fotos do espaço, equipe e procedimentos' },
-  video: { icon: Video, label: 'Vídeos', description: 'Vídeos institucionais e depoimentos' },
   doc: { icon: FileText, label: 'Documentos', description: 'Termos, contratos e materiais' },
   consent: { icon: FileText, label: 'Autorizações', description: 'Termos de uso de imagem' },
 };
@@ -52,9 +69,20 @@ export default function ClientAssets() {
   const userId = currentUser?.id;
   const { data: clientLinks } = useUserClients(userId || "");
   const clientId = useMemo(() => clientLinks?.[0]?.client_id, [clientLinks]);
+  const { data: client } = useClient(clientId || "");
+  const agencyId = client?.agency_id || "";
   const { data: assets, isLoading: assetsLoading } = useAssets(clientId ? { client_id: clientId } : undefined);
   const { data: accessChecklist, isLoading: accessLoading } = useAccessValidation({ client_id: clientId || "" });
+  const uploadAssetFile = useUploadAssetFile();
   const updateAsset = useUpdateAsset();
+  const createAuditLog = useCreateAuditLog();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTarget, setUploadTarget] = useState<Database["public"]["Tables"]["assets"]["Row"] | null>(null);
+  const [linkTarget, setLinkTarget] = useState<Database["public"]["Tables"]["assets"]["Row"] | null>(null);
+  const [linkValue, setLinkValue] = useState("");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const isUploading = uploadAssetFile.isPending;
+  const isUpdatingLink = updateAsset.isPending;
 
   const uploadedCount = (assets || []).filter(a => (a.status || 'missing') !== 'missing').length;
   const validatedCount = (assets || []).filter(a => a.status === 'validated').length;
@@ -63,20 +91,138 @@ export default function ClientAssets() {
   const accessValidatedCount = (accessChecklist || []).filter(a => a.status === 'done').length;
   const totalAccesses = accessChecklist?.length || 0;
 
-  const handleUpload = async (assetId: string) => {
-    if (!assetId) return;
-    await updateAsset.mutateAsync({ id: assetId, status: 'uploaded' });
+  const missingAssets = (assets || []).filter((asset) => (asset.status || 'missing') === 'missing');
+
+  const handleFileUpload = async (file: File, asset: Database["public"]["Tables"]["assets"]["Row"]) => {
+    if (!clientId || !agencyId || !currentUser) return;
+    const type = (asset.type || 'document') as Database["public"]["Enums"]["asset_type"];
+
+    await uploadAssetFile.mutateAsync({
+      asset_id: asset.id,
+      file,
+      client_id: clientId,
+      agency_id: agencyId,
+      type,
+      uploaded_by: currentUser.id,
+      visibility: 'public',
+    });
+
+    await createAuditLog.mutateAsync({
+      agency_id: agencyId,
+      user_id: currentUser.id,
+      action: "asset_uploaded",
+      entity_type: "assets",
+      entity_id: asset.id,
+      new_data: {
+        file_name: file.name,
+        size: file.size,
+        type,
+      },
+    });
+
     toast({
-      title: "Upload registrado",
-      description: "A equipe será notificada para validar o arquivo.",
+      title: "Upload enviado",
+      description: "A equipe receberá o arquivo para validação.",
     });
   };
 
-  const handleAccessSubmit = () => {
-    toast({
-      title: "Acesso enviado",
-      description: "A equipe irá validar a conexão.",
-    });
+  const openFilePicker = (asset?: Database["public"]["Tables"]["assets"]["Row"]) => {
+    const target = asset || missingAssets[0];
+    if (!target) {
+      toast({
+        title: "Nenhum ativo pendente",
+        description: "Não há ativos faltando para este cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (target.status === 'validated') {
+      toast({
+        title: "Asset validado",
+        description: "Este asset já foi validado e não pode ser alterado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setUploadTarget(target);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !uploadTarget) return;
+    await handleFileUpload(file, uploadTarget);
+    setUploadTarget(null);
+    event.target.value = '';
+  };
+
+  const openLinkDialog = (asset: Database["public"]["Tables"]["assets"]["Row"]) => {
+    if (asset.status === 'validated') {
+      toast({
+        title: "Asset validado",
+        description: "Este asset já foi validado e não pode ser alterado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setLinkTarget(asset);
+    setLinkValue(asset.url || "");
+    setLinkOpen(true);
+  };
+
+  const handleSaveLink = async () => {
+    if (!linkTarget || !currentUser || !agencyId) return;
+    if (linkTarget.status === 'validated') {
+      toast({
+        title: "Asset validado",
+        description: "Este asset já foi validado e não pode ser alterado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const trimmed = linkValue.trim();
+    if (!trimmed) {
+      toast({
+        title: "Link obrigatório",
+        description: "Informe um link válido para o asset.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateAsset.mutateAsync({
+        id: linkTarget.id,
+        url: trimmed,
+        status: 'uploaded',
+      });
+
+      await createAuditLog.mutateAsync({
+        agency_id: agencyId,
+        user_id: currentUser.id,
+        action: "asset_linked",
+        entity_type: "assets",
+        entity_id: linkTarget.id,
+        new_data: {
+          url: trimmed,
+        },
+      });
+
+      toast({
+        title: "Link enviado",
+        description: "O link foi registrado para validação.",
+      });
+
+      setLinkOpen(false);
+      setLinkTarget(null);
+      setLinkValue("");
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar link",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusConfig = (status: string) => {
@@ -148,27 +294,12 @@ export default function ClientAssets() {
           </TabsList>
 
           <TabsContent value="assets" className="mt-4 space-y-4">
-            {/* Upload Area */}
-            <GlassCard className="border-dashed border-2 border-primary/30 bg-primary/5">
-              <GlassCardContent className="p-8">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Upload className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">Arraste arquivos aqui</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    ou clique para selecionar do seu computador
-                  </p>
-                  <Button className="button-primary">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Selecionar Arquivos
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Formatos aceitos: PNG, JPG, MP4, PDF (máx. 50MB)
-                  </p>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+            />
 
             {/* Asset Types */}
             <div className="space-y-3">
@@ -203,14 +334,32 @@ export default function ClientAssets() {
                           <h3 className="font-medium text-foreground">{asset.name}</h3>
                           <p className="text-xs text-muted-foreground">{config?.description}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className={cn("flex items-center gap-1", statusConfig.color)}>
-                            <StatusIcon className="h-4 w-4" />
-                            <span className="text-sm">{statusConfig.label}</span>
-                          </div>
-                          {(asset.status || 'missing') === 'missing' && (
-                            <Button size="sm" onClick={() => handleUpload(asset.id)}>
-                              Enviar
+                      <div className="flex items-center gap-3">
+                        <div className={cn("flex items-center gap-1", statusConfig.color)}>
+                          <StatusIcon className="h-4 w-4" />
+                          <span className="text-sm">{statusConfig.label}</span>
+                        </div>
+                        {(asset.status || 'missing') === 'missing' && (
+                          <Button size="sm" onClick={() => openFilePicker(asset)} disabled={isUploading}>
+                            Enviar
+                          </Button>
+                        )}
+                        {(asset.status || 'missing') !== 'missing' && (asset.status || 'missing') !== 'validated' && (
+                          <Button size="sm" variant="outline" onClick={() => openFilePicker(asset)} disabled={isUploading}>
+                            Trocar arquivo
+                          </Button>
+                        )}
+                        {(asset.status || 'missing') !== 'validated' && (
+                          <Button size="sm" variant="outline" onClick={() => openLinkDialog(asset)} disabled={isUpdatingLink}>
+                            <LinkIcon className="h-4 w-4 mr-2" />
+                            Enviar link
+                          </Button>
+                        )}
+                        {asset.url && (
+                          <Button asChild size="sm" variant="outline">
+                            <a href={asset.url} target="_blank" rel="noreferrer">
+                              Ver arquivo
+                              </a>
                             </Button>
                           )}
                         </div>
@@ -314,6 +463,44 @@ export default function ClientAssets() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog
+        open={linkOpen}
+        onOpenChange={(open) => {
+          setLinkOpen(open);
+          if (!open) {
+            setLinkTarget(null);
+            setLinkValue("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar link do asset</DialogTitle>
+            <DialogDescription>
+              Cole o link do arquivo para que a equipe possa validar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="asset-link">Link</Label>
+            <Input
+              id="asset-link"
+              type="url"
+              placeholder="https://..."
+              value={linkValue}
+              onChange={(event) => setLinkValue(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveLink} disabled={isUpdatingLink}>
+              {isUpdatingLink ? "Salvando..." : "Salvar link"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ClientLayout>
   );
 }

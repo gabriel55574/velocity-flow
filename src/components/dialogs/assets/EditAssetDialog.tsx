@@ -49,6 +49,7 @@ const schema = z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
     type: z.enum(['image', 'video', 'document', 'link', 'credential']),
     url: z.string().url('URL inválida').optional().or(z.literal('')).nullable(),
+    status: z.enum(['missing', 'uploaded', 'validated']),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -79,6 +80,7 @@ export function EditAssetDialog({ open, onOpenChange, asset }: EditAssetDialogPr
                 name: asset.name,
                 type: asset.type,
                 url: asset.url || '',
+                status: asset.status || 'missing',
             });
         }
     }, [asset, form]);
@@ -153,6 +155,12 @@ export function EditAssetDialog({ open, onOpenChange, asset }: EditAssetDialogPr
         document: 'Documento',
         link: 'Link',
         credential: 'Credencial',
+    };
+
+    const statusLabels: Record<string, string> = {
+        missing: 'Faltando',
+        uploaded: 'Enviado',
+        validated: 'Validado',
     };
 
     // Preview for images
@@ -233,6 +241,25 @@ export function EditAssetDialog({ open, onOpenChange, asset }: EditAssetDialogPr
                                             {typeIcons[value]}
                                             {label}
                                         </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                            value={form.watch('status')}
+                            onValueChange={(value) => form.setValue('status', value as FormData['status'])}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(statusLabels).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

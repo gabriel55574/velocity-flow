@@ -12,6 +12,12 @@ import type { Database } from '@/integrations/supabase/types';
 type Approval = Database['public']['Tables']['approvals']['Row'];
 type ApprovalInsert = Database['public']['Tables']['approvals']['Insert'];
 type ApprovalUpdate = Database['public']['Tables']['approvals']['Update'];
+type ApprovalType = Database['public']['Tables']['approvals']['Row']['type'];
+
+const buildApprovalPath = (agencyId: string, clientId: string, type: string, filename: string) => {
+    const safeName = filename.replace(/[^\w.-]+/g, '-');
+    return `${agencyId}/${clientId}/${type}/${Date.now()}-${safeName}`;
+};
 
 interface ApprovalFilters {
     client_id?: string;
@@ -215,6 +221,42 @@ export function useRequestRevision() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['approvals'] });
+        }
+    });
+}
+
+// UPLOAD FILE - Upload approval file to storage and return URL
+export function useUploadApprovalFile() {
+    return useMutation({
+        mutationFn: async ({
+            file,
+            client_id,
+            agency_id,
+            type,
+        }: {
+            file: File;
+            client_id: string;
+            agency_id: string;
+            type?: ApprovalType | null;
+        }) => {
+            const approvalType = (type || 'other').toString();
+            const fileName = buildApprovalPath(agency_id, client_id, approvalType, file.name);
+
+            const { error: uploadError } = await supabase.storage
+                .from('approvals')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: file.type || undefined,
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('approvals')
+                .getPublicUrl(fileName);
+
+            return publicUrl;
         }
     });
 }

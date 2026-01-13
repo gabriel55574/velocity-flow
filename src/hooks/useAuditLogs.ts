@@ -5,11 +5,12 @@
  * Epic 0: US 0.1 - Hooks Supabase por Entidade
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type AuditLog = Database['public']['Tables']['audit_logs']['Row'];
+type AuditLogInsert = Database['public']['Tables']['audit_logs']['Insert'];
 
 interface AuditLogFilters {
     agency_id?: string;
@@ -67,6 +68,27 @@ export function useAuditLogs(filters?: AuditLogFilters) {
 
             if (error) throw error;
             return data;
+        }
+    });
+}
+
+// CREATE - Log an action in audit_logs
+export function useCreateAuditLog() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (log: AuditLogInsert) => {
+            const { data, error } = await supabase
+                .from('audit_logs')
+                .insert(log)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['audit_logs'] });
         }
     });
 }

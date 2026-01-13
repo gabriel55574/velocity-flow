@@ -34,7 +34,8 @@ import {
   Settings,
   Layers,
   Pencil,
-  Plus
+  Plus,
+  Upload
 } from "lucide-react";
 import { useClient } from "@/hooks/useClients";
 import { useCampaigns } from "@/hooks/useCampaigns";
@@ -234,6 +235,12 @@ export function ClientWorkspace() {
                 <TabsTrigger value="media" className="rounded-lg gap-2 text-xs sm:text-sm">
                   <Activity className="h-4 w-4" /> Mídia
                 </TabsTrigger>
+                <TabsTrigger value="assets" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Upload className="h-4 w-4" /> Assets
+                </TabsTrigger>
+                <TabsTrigger value="approvals" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Clock className="h-4 w-4" /> Aprovações
+                </TabsTrigger>
                 <TabsTrigger value="crm" className="rounded-lg gap-2 text-xs sm:text-sm">
                   <MessageSquare className="h-4 w-4" /> CRM
                 </TabsTrigger>
@@ -396,6 +403,14 @@ export function ClientWorkspace() {
 
           <TabsContent value="media" className="mt-4">
             <MediaTab clientId={client.id} />
+          </TabsContent>
+
+          <TabsContent value="assets" className="mt-4">
+            <AssetsTab clientId={client.id} />
+          </TabsContent>
+
+          <TabsContent value="approvals" className="mt-4">
+            <ApprovalsTab clientId={client.id} />
           </TabsContent>
 
           <TabsContent value="crm" className="mt-4">

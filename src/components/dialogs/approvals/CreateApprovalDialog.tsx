@@ -6,6 +6,7 @@
  */
 
 import { useForm } from 'react-hook-form';
+import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -28,7 +29,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateApproval } from '@/hooks/useApprovals';
+import { useCreateApproval, useUploadApprovalFile } from '@/hooks/useApprovals';
+import { useClient } from '@/hooks/useClients';
+import { Upload } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const schema = z.object({
     title: z.string().min(3, 'Título deve ter no mínimo 3 caracteres'),
@@ -55,6 +59,12 @@ export function CreateApprovalDialog({
 }: CreateApprovalDialogProps) {
     const { toast } = useToast();
     const createApproval = useCreateApproval();
+    const uploadApprovalFile = useUploadApprovalFile();
+    const { data: client } = useClient(clientId);
+    const agencyId = client?.agency_id || "";
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const form = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -69,6 +79,20 @@ export function CreateApprovalDialog({
 
     const onSubmit = async (data: FormData) => {
         try {
+            let fileUrl: string | null = data.file_url || null;
+
+            if (selectedFile) {
+                if (!agencyId) {
+                    throw new Error('Agência não encontrada para upload.');
+                }
+                fileUrl = await uploadApprovalFile.mutateAsync({
+                    file: selectedFile,
+                    client_id: clientId,
+                    agency_id: agencyId,
+                    type: data.type,
+                });
+            }
+
             await createApproval.mutateAsync({
                 title: data.title,
                 type: data.type,
@@ -76,7 +100,7 @@ export function CreateApprovalDialog({
                 requester_id: requesterId,
                 status: 'pending',
                 due_date: data.due_date || null,
-                file_url: data.file_url || null,
+                file_url: fileUrl,
                 description: data.description || null,
             });
 
@@ -87,6 +111,7 @@ export function CreateApprovalDialog({
 
             form.reset();
             onOpenChange(false);
+            setSelectedFile(null);
         } catch (error) {
             toast({
                 title: 'Erro ao criar solicitação',
@@ -103,6 +128,8 @@ export function CreateApprovalDialog({
         report: '📊 Relatório',
         other: '📄 Outro',
     };
+
+    const isPending = createApproval.isPending || uploadApprovalFile.isPending;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,12 +208,49 @@ export function CreateApprovalDialog({
                         </p>
                     </div>
 
+                    <div className="space-y-2">
+                        <Label>Upload do Arquivo</Label>
+                        <div
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-sm text-muted-foreground",
+                                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+                            )}
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={(event) => {
+                                event.preventDefault();
+                                setIsDragging(true);
+                            }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={(event) => {
+                                event.preventDefault();
+                                setIsDragging(false);
+                                const file = event.dataTransfer.files?.[0];
+                                if (file) setSelectedFile(file);
+                            }}
+                        >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (file) setSelectedFile(file);
+                                }}
+                            />
+                            <Upload className="h-5 w-5 text-primary" />
+                            <div>
+                                <p>{selectedFile ? selectedFile.name : "Clique ou arraste um arquivo"}</p>
+                                <p className="text-xs">O arquivo enviado terá prioridade sobre o link.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={createApproval.isPending}>
-                            {createApproval.isPending ? 'Enviando...' : 'Solicitar Aprovação'}
+                        <Button type="submit" disabled={isPending}>
+                            {isPending ? 'Enviando...' : 'Solicitar Aprovação'}
                         </Button>
                     </DialogFooter>
                 </form>

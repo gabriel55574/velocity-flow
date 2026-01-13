@@ -592,6 +592,16 @@ velocity-flow/
 | 10/01/2026 PM | Workflow | ModuleCard com props de avanço corrigidas |
 | 10/01/2026 PM | Lint | Erros de tipagem resolvidos em UI e workflow |
 | 10/01/2026 PM | Lint | Warnings eliminados (variants/hooks/useMemo) |
+| 10/01/2026 PM | Portal Cliente | Upload real de assets + preview de approvals |
+| 10/01/2026 PM | Aprovações | Upload de arquivo integrado no CreateApprovalDialog |
+| 10/01/2026 PM | Storage | Migration de policies criada (aplicar manualmente) |
+| 10/01/2026 PM | Audit Log | Portal registra ações de approvals/assets |
+| 13/01/2026 PM | Client Workspace | Abas Assets/Aprovações habilitadas no /clients/:id |
+| 13/01/2026 PM | Assets | Criar asset pendente sem URL/arquivo |
+| 13/01/2026 PM | Audit Log | Policy de insert para audit_logs (RLS) |
+| 13/01/2026 PM | Assets | Status editável + troca de arquivo no portal |
+| 13/01/2026 PM | Assets | Link via portal + remoção de arquivo antigo no replace |
+| 13/01/2026 PM | Portal Cliente | Removida área global de upload em /client/assets |
 
 ---
 
