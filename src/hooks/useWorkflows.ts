@@ -11,12 +11,14 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Step = Database['public']['Tables']['steps']['Row'];
 type Gate = Database['public']['Tables']['gates']['Row'];
+type ChecklistItem = Database['public']['Tables']['checklist_items']['Row'];
 type WorkflowInsert = Database['public']['Tables']['workflows']['Insert'];
 type WorkflowUpdate = Database['public']['Tables']['workflows']['Update'];
 type ModuleInsert = Database['public']['Tables']['modules']['Insert'];
 type ModuleUpdate = Database['public']['Tables']['modules']['Update'];
 type StepInsert = Database['public']['Tables']['steps']['Insert'];
 type StepUpdate = Database['public']['Tables']['steps']['Update'];
+type ChecklistItemInsert = Database['public']['Tables']['checklist_items']['Insert'];
 
 // ============================================================================
 // WORKFLOWS
@@ -33,7 +35,10 @@ export function useWorkflows(workspaceId: string) {
           *,
           modules (
             *,
-            steps (*),
+            steps (
+              *,
+              checklist_items (*)
+            ),
             gates (*)
           )
         `)
@@ -153,7 +158,10 @@ export function useModules(workflowId: string) {
                 .from('modules')
                 .select(`
           *,
-          steps (*),
+          steps (
+            *,
+            checklist_items (*)
+          ),
           gates (*)
         `)
                 .eq('workflow_id', workflowId)
@@ -335,10 +343,27 @@ export function useUpdateStepStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, status }: { id: string; status: Database['public']['Enums']['task_status'] }) => {
+        mutationFn: async ({
+            id,
+            status,
+            completedBy,
+        }: {
+            id: string;
+            status: Database['public']['Enums']['task_status'];
+            completedBy?: string | null;
+        }) => {
+            const updates: StepUpdate = { status };
+            if (status === 'done') {
+                updates.completed_at = new Date().toISOString();
+                updates.completed_by = completedBy ?? null;
+            } else {
+                updates.completed_at = null;
+                updates.completed_by = null;
+            }
+
             const { data, error } = await supabase
                 .from('steps')
-                .update({ status })
+                .update(updates)
                 .eq('id', id)
                 .select()
                 .single();
@@ -357,6 +382,29 @@ export function useUpdateStepStatus() {
 // ============================================================================
 // CHECKLIST ITEMS
 // ============================================================================
+
+// CREATE CHECKLIST ITEM
+export function useCreateChecklistItem() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (item: ChecklistItemInsert) => {
+            const { data, error } = await supabase
+                .from('checklist_items')
+                .insert(item)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as ChecklistItem;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['steps'] });
+            queryClient.invalidateQueries({ queryKey: ['modules'] });
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+        }
+    });
+}
 
 // TOGGLE CHECKLIST ITEM
 export function useToggleChecklistItem() {

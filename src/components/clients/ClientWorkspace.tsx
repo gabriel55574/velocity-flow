@@ -31,15 +31,22 @@ import {
   Activity,
   ChevronLeft,
   Share2,
-  Settings
+  Settings,
+  Layers,
+  Pencil,
+  Plus
 } from "lucide-react";
 import { useClient } from "@/hooks/useClients";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useLeads } from "@/hooks/useLeads";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useState } from "react";
 import { formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
 import { EditClientDialog } from "@/components/dialogs/clients/EditClientDialog";
 import { ManageAccessDialog } from "@/components/dialogs/access/ManageAccessDialog";
+import { CreateWorkspaceDialog } from "@/components/dialogs/workspaces/CreateWorkspaceDialog";
+import { EditWorkspaceDialog } from "@/components/dialogs/workspaces/EditWorkspaceDialog";
+import type { Database } from "@/types/database";
 
 export function ClientWorkspace() {
   const { id } = useParams();
@@ -47,10 +54,14 @@ export function ClientWorkspace() {
   const { data: client, isLoading: clientLoading, error: clientError } = useClient(id || "");
   const { data: campaigns, isLoading: campaignsLoading, error: campaignsError } = useCampaigns({ client_id: id || "" });
   const { data: leads, isLoading: leadsLoading, error: leadsError } = useLeads({ client_id: id || "" });
+  const { data: workspaces, isLoading: workspacesLoading, error: workspacesError } = useWorkspaces(id || "");
 
   const [activeTab, setActiveTab] = useState("overview");
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [editWorkspaceOpen, setEditWorkspaceOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Database["public"]["Tables"]["workspaces"]["Row"] | null>(null);
 
   if (clientLoading || campaignsLoading || leadsLoading) {
     return (
@@ -208,6 +219,9 @@ export function ClientWorkspace() {
                 <TabsTrigger value="strategy" className="rounded-lg gap-2 text-xs sm:text-sm">
                   <Target className="h-4 w-4" /> Estratégia
                 </TabsTrigger>
+                <TabsTrigger value="workflows" className="rounded-lg gap-2 text-xs sm:text-sm">
+                  <Layers className="h-4 w-4" /> Workflows
+                </TabsTrigger>
                 <TabsTrigger value="data" className="rounded-lg gap-2 text-xs sm:text-sm">
                   <Database className="h-4 w-4" /> Dados
                 </TabsTrigger>
@@ -253,6 +267,66 @@ export function ClientWorkspace() {
                 </GlassCard>
               ))}
             </div>
+
+            <GlassCard>
+              <GlassCardHeader>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <GlassCardTitle className="text-base flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-primary" />
+                    Workspaces ({workspaces?.length || 0})
+                  </GlassCardTitle>
+                  <Button size="sm" className="gap-2" onClick={() => setCreateWorkspaceOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    Novo Workspace
+                  </Button>
+                </div>
+              </GlassCardHeader>
+              <GlassCardContent className="space-y-3">
+                {workspacesLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando workspaces...
+                  </div>
+                ) : workspacesError ? (
+                  <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+                    Erro ao carregar workspaces. Tente novamente.
+                  </div>
+                ) : workspaces && workspaces.length > 0 ? (
+                  workspaces.map((workspace: any) => (
+                    <div
+                      key={workspace.id}
+                      className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium">{workspace.name || "Workspace"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(workspace.workflows?.length || 0)} workflows • Criado em{" "}
+                          {workspace.created_at
+                            ? new Date(workspace.created_at).toLocaleDateString("pt-BR")
+                            : "-"}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2"
+                        onClick={() => {
+                          setSelectedWorkspace(workspace);
+                          setEditWorkspaceOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Editar
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-muted-foreground">
+                    Nenhum workspace criado. Adicione o primeiro para organizar o cliente.
+                  </div>
+                )}
+              </GlassCardContent>
+            </GlassCard>
 
             <div className="grid lg:grid-cols-3 gap-6">
               <GlassCard className="lg:col-span-2">
@@ -306,6 +380,10 @@ export function ClientWorkspace() {
             <StrategyTab clientId={client.id} />
           </TabsContent>
 
+          <TabsContent value="workflows" className="mt-4">
+            <WorkflowTimeline clientId={client.id} />
+          </TabsContent>
+
           <TabsContent value="data" className="mt-4">
             <DataTab clientId={client.id} />
           </TabsContent>
@@ -340,6 +418,21 @@ export function ClientWorkspace() {
         clientId={client.id}
         agencyId={client.agency_id}
       />
+      <CreateWorkspaceDialog
+        open={createWorkspaceOpen}
+        onOpenChange={setCreateWorkspaceOpen}
+        clientId={client.id}
+      />
+      {selectedWorkspace && (
+        <EditWorkspaceDialog
+          open={editWorkspaceOpen}
+          onOpenChange={(open) => {
+            setEditWorkspaceOpen(open);
+            if (!open) setSelectedWorkspace(null);
+          }}
+          workspace={selectedWorkspace}
+        />
+      )}
     </div>
   );
 }

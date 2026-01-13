@@ -1,6 +1,6 @@
 # 📝 Walkthrough — Velocity Agency OS
 
-**Última atualização:** 10/01/2026 16:05  
+**Última atualização:** 10/01/2026 19:10  
 **Propósito:** Registro histórico do que foi implementado no projeto.
 
 ---
@@ -43,6 +43,40 @@
 
 - Buckets criados: `assets-public`, `assets-private`, `approvals`
 - Policies em `storage.objects` permanecem pendentes (owner `supabase_storage_admin`)
+
+### 📅 10/01/2026 — Sessão 9: Audit Logs UI
+
+- Aba "Audit Logs" em `Settings.tsx` com listagem read-only
+- Busca por ação/entidade/usuário e limite de registros configurável
+
+### 📅 10/01/2026 — Sessão 10: KPIs e Experimentos (DataTab)
+
+- KPIs (definições + valores) listados no `DataTab` com criação/edição
+- Experimentos listados no `DataTab` com criação/edição
+
+### 📅 10/01/2026 — Sessão 11: Workspaces UI
+
+- Workspaces listados no `ClientWorkspace` com criação/edição/exclusão
+- Dialogs de workspace integrados no overview
+
+### 📅 10/01/2026 — Sessão 12: Checklist UI (Workflows)
+
+- Checklist items com toggle e criação inline por step no `ModuleCard`
+- Hook `useCreateChecklistItem` adicionado ao `useWorkflows`
+
+### 📅 10/01/2026 — Sessão 13: Gate validation (DoD)
+
+- Função `validateGate()` criada e usada para recalcular gate no módulo
+- Pendências exibidas no UI ao lado do gate (steps/checklist)
+
+### 📅 10/01/2026 — Sessão 14: Ajuste tipagem steps
+
+- Removida referência a `step.title` inexistente no `ModuleCard`
+
+### 📅 10/01/2026 — Sessão 15: Concluir step com checklist
+
+- Botão "Concluir" bloqueado até checklist completo
+- Atualização automática do gate após concluir step
 
 
 ### 📅 09/01/2026 — Sessão 1: Documentação e Planejamento
@@ -551,6 +585,11 @@ velocity-flow/
 | 10/01/2026 PM | Relatórios | Reports migrado para dados reais |
 | 10/01/2026 PM | Today + CRUD | Dashboard + Clients/Approvals/Assets integrados |
 | 10/01/2026 PM | Portal Cliente | /client/approvals corrigido |
+| 10/01/2026 PM | Workflow | Steps agora registram completed_at/completed_by |
+| 10/01/2026 PM | Workflow | Tipagem de steps ajustada no ModuleCard |
+| 10/01/2026 PM | Client Workspace | Aba Workflows com timeline ativada |
+| 10/01/2026 PM | Workflow | Avanço bloqueado por gate no módulo ativo |
+| 10/01/2026 PM | Workflow | ModuleCard com props de avanço corrigidas |
 
 ---
 

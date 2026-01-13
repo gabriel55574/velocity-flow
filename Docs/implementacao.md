@@ -1,6 +1,6 @@
 # 📘 Guia de Implementação — Velocity Agency OS
 
-**Última atualização:** 10 jan 2026 16:05  
+**Última atualização:** 10 jan 2026 19:10  
 **Propósito:** Documentação técnica COMPLETA para continuidade do projeto sem erros.  
 **Documento PDR Base:** `velocity_agency_os_PDR_v1_0.md`
 
@@ -1314,6 +1314,65 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 
 - ✅ Criados buckets `assets-public`, `assets-private`, `approvals`
 - ⚠️ Policies em `storage.objects` pendentes (owner `supabase_storage_admin`)
+
+### 10 jan 2026 16:30 — Audit Logs UI
+
+- ✅ Nova aba "Audit Logs" em `Settings.tsx` com listagem read-only
+- ✅ Busca por ação/entidade/usuário + limite de registros
+
+### 10 jan 2026 17:05 — KPIs + Experimentos (DataTab)
+
+- ✅ DataTab agora lista KPIs (definições + valores) com criação/edição
+- ✅ Experimentos listados com criação/edição direto no DataTab
+
+### 10 jan 2026 17:35 — Workspaces UI
+
+- ✅ Workspaces listados no `ClientWorkspace` com criação/edição/exclusão
+- ✅ Integração dos dialogs `CreateWorkspaceDialog`/`EditWorkspaceDialog`
+
+### 10 jan 2026 18:05 — Checklist UI (Workflows)
+
+- ✅ Checklist items exibidos por step com toggle e criação inline em `ModuleCard`
+- ✅ Hook `useCreateChecklistItem` adicionado + seleção de checklist em `useWorkflows`
+
+### 10 jan 2026 18:40 — Gate validation (DoD)
+
+- ✅ `validateGate()` criado em `src/lib/workflowEngine.ts`
+- ✅ Recalcular gate com base em steps + checklist, exibindo pendências no `ModuleCard`
+- ✅ Hook utilitário `useWorkflowEngine.ts` adicionado
+
+### 10 jan 2026 18:50 — Ajuste tipagem steps
+
+- ✅ `ModuleCard` agora usa `step.name` como fallback seguro (remove referência inexistente `title`)
+
+### 10 jan 2026 19:10 — Concluir step com checklist
+
+- ✅ Botão "Concluir" no step bloqueado até checklist completo
+- ✅ Ao concluir, status do step atualizado para `done` e gate recalculado
+
+### 10 jan 2026 19:25 — Step completion tracking
+
+- ✅ `useUpdateStepStatus` agora registra `completed_at` e `completed_by` ao concluir
+- ✅ Mudança de status limpa os campos de conclusão quando não está `done`
+- ✅ `ModuleCard` envia o usuário atual ao concluir ou marcar como done
+
+### 10 jan 2026 19:35 — Tipagem steps (ModuleCard)
+
+- ✅ `ModuleCard` tipado com `StepWithChecklist` para evitar erro de TypeScript
+- ✅ `nextSteps` agora preserva tipo correto ao recalcular gate
+
+### 10 jan 2026 19:45 — Aba Workflows (Client)
+
+- ✅ Nova aba "Workflows" no `ClientWorkspace` com `WorkflowTimeline`
+- ✅ Timeline com módulos/steps/gates acessível no `/clients/:id`
+
+### 10 jan 2026 20:05 — Avanço bloqueado por gate
+
+- ✅ Botão "Avançar" no módulo ativo com validação do gate
+- ✅ Bloqueio com mensagem quando gate falha ou há pendências
+- ✅ Avançar ativa o próximo módulo via `is_active`
+- ✅ Fallback do módulo ativo para o primeiro quando nenhum está marcado
+- ✅ Assinatura do `ModuleCard` alinhada com props de avanço
 
 ### 10 jan 2026 11:27 — Integração de Dialogs P1
 

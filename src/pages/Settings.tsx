@@ -10,10 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Building2, Palette, Plug, Shield, Plus, Edit, Trash2, Check, X, Moon, Sun } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users, Building2, Palette, Plug, Shield, Plus, Edit, Trash2, Check, X, Moon, Sun, Activity, Loader2, Search } from "lucide-react";
 import { mockUsers } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/hooks/useUsers";
+import { useAuditLogs } from "@/hooks/useAuditLogs";
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador', cs: 'Customer Success', editor: 'Editor de Conteúdo', media: 'Media Buyer', analyst: 'Analista', viewer: 'Visualizador',
@@ -33,6 +36,13 @@ export default function Settings() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('viewer');
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditLimit, setAuditLimit] = useState('50');
+  const { data: currentUser } = useCurrentUser();
+  const { data: auditLogs, isLoading: auditLoading, error: auditError } = useAuditLogs({
+    agency_id: currentUser?.agency_id,
+    limit: Number(auditLimit)
+  });
 
   const handleInvite = () => {
     toast({ title: "Convite enviado! 📧", description: `Um email foi enviado para ${inviteEmail}` });
@@ -51,6 +61,7 @@ export default function Settings() {
             <TabsTrigger value="agency" className="gap-2"><Building2 className="h-4 w-4" />Agência</TabsTrigger>
             <TabsTrigger value="appearance" className="gap-2"><Palette className="h-4 w-4" />Aparência</TabsTrigger>
             <TabsTrigger value="integrations" className="gap-2"><Plug className="h-4 w-4" />Integrações</TabsTrigger>
+            <TabsTrigger value="audit" className="gap-2"><Activity className="h-4 w-4" />Audit Logs</TabsTrigger>
             <TabsTrigger value="security" className="gap-2"><Shield className="h-4 w-4" />Segurança</TabsTrigger>
           </TabsList>
 
@@ -155,6 +166,118 @@ export default function Settings() {
                 </GlassCard>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="audit" className="space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Audit Logs</h2>
+                <p className="text-sm text-muted-foreground">Histórico de ações da agência</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por ação, entidade ou usuário"
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    className="pl-9 w-64"
+                  />
+                </div>
+                <Select value={auditLimit} onValueChange={setAuditLimit}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Limite" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25 registros</SelectItem>
+                    <SelectItem value="50">50 registros</SelectItem>
+                    <SelectItem value="100">100 registros</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <GlassCard>
+              <GlassCardHeader>
+                <GlassCardTitle className="flex items-center gap-2 text-base">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Eventos recentes
+                </GlassCardTitle>
+              </GlassCardHeader>
+              <GlassCardContent className="p-0">
+                {auditLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin mb-3" />
+                    Carregando logs...
+                  </div>
+                ) : auditError ? (
+                  <div className="p-4 text-sm text-destructive">
+                    Erro ao carregar audit logs. Tente novamente.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Ação</TableHead>
+                        <TableHead>Entidade</TableHead>
+                        <TableHead>ID</TableHead>
+                        <TableHead>IP</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditLogs && auditLogs.length > 0 ? (
+                        auditLogs
+                          .filter((log: any) => {
+                            if (!auditSearch) return true;
+                            const haystack = [
+                              log.action,
+                              log.entity_type,
+                              log.entity_id,
+                              log.user?.full_name,
+                              log.user?.email
+                            ]
+                              .filter(Boolean)
+                              .join(" ")
+                              .toLowerCase();
+                            return haystack.includes(auditSearch.toLowerCase());
+                          })
+                          .map((log: any) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="whitespace-nowrap">
+                                {log.created_at
+                                  ? new Date(log.created_at).toLocaleString("pt-BR")
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="min-w-[140px]">
+                                  <p className="font-medium">{log.user?.full_name || "Usuário"}</p>
+                                  <p className="text-xs text-muted-foreground">{log.user?.email || "-"}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">{log.action}</Badge>
+                              </TableCell>
+                              <TableCell className="capitalize">{log.entity_type}</TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {log.entity_id ? String(log.entity_id).slice(0, 8) : "-"}
+                              </TableCell>
+                              <TableCell className="text-xs">{log.ip_address || "-"}</TableCell>
+                            </TableRow>
+                          ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">
+                            Nenhum log encontrado.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </GlassCardContent>
+            </GlassCard>
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">

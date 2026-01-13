@@ -2,6 +2,8 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GateStatus } from "./GateStatus";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
@@ -20,20 +22,27 @@ import {
     Plus
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useDeleteModule, useDeleteStep, useUpdateGateStatus, useUpdateStepStatus } from "@/hooks/useWorkflows";
+import { useDeleteChecklistItem, useDeleteModule, useDeleteStep, useToggleChecklistItem, useUpdateGateStatus, useUpdateStepStatus, useCreateChecklistItem } from "@/hooks/useWorkflows";
 import type { Database } from "@/types/database";
 import { CreateStepDialog } from "@/components/dialogs/steps/CreateStepDialog";
+import { useCurrentUser } from "@/hooks/useUsers";
+import { validateGate } from "@/lib/workflowEngine";
+import { useToast } from "@/hooks/use-toast";
 
 interface ModuleCardProps {
     module: any;
     isActive?: boolean;
     agencyId?: string;
+    onAdvanceModule?: () => Promise<void>;
+    nextModuleName?: string;
 }
 
 type Step = Database["public"]["Tables"]["steps"]["Row"];
 type Gate = Database["public"]["Tables"]["gates"]["Row"];
+type ChecklistItem = Database["public"]["Tables"]["checklist_items"]["Row"];
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 type GateStatusType = Database["public"]["Enums"]["gate_status"];
+type StepWithChecklist = Step & { checklist_items?: ChecklistItem[] };
 
 const statusConfig = {
     not_started: {
@@ -62,21 +71,47 @@ const statusConfig = {
     },
 };
 
-export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardProps) {
+export function ModuleCard({
+    module,
+    isActive = false,
+    agencyId,
+    onAdvanceModule,
+    nextModuleName,
+}: ModuleCardProps) {
     const [isExpanded, setIsExpanded] = useState(isActive);
     const [isCreateStepOpen, setIsCreateStepOpen] = useState(false);
+    const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
+    const { data: currentUser } = useCurrentUser();
+    const { toast } = useToast();
     const updateStepStatus = useUpdateStepStatus();
     const deleteStep = useDeleteStep();
     const deleteModule = useDeleteModule();
     const updateGateStatus = useUpdateGateStatus();
+    const toggleChecklistItem = useToggleChecklistItem();
+    const deleteChecklistItem = useDeleteChecklistItem();
+    const createChecklistItem = useCreateChecklistItem();
 
     const status = module.status || 'not_started';
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
     const StatusIcon = config.icon;
-    const steps = (module.steps || []) as Step[];
+    const steps = (module.steps || []) as StepWithChecklist[];
     const gates = (module.gates || []) as Gate[];
     const title = module.name || module.title || 'Módulo';
     const progress = module.progress || 0;
+    const gateValidations = gates.map((gate) => ({
+        gate,
+        validation: validateGate(steps, { currentStatus: gate.status as GateStatusType | null }),
+    }));
+    const canAdvance = gates.length === 0 || gateValidations.every((item) => item.validation.status === "passed");
+    const advanceBlockedGate = gateValidations.find(
+        (item) => item.validation.status === "failed" || item.validation.status === "blocked"
+    );
+    const advanceIssues = gateValidations.flatMap((item) => item.validation.issues);
+    const advanceMessage = advanceBlockedGate
+        ? "Gate reprovado ou bloqueado. Resolva as pendências para avançar."
+        : advanceIssues.length > 0
+            ? `Pendência: ${advanceIssues[0]}`
+            : null;
     const nextStepOrder = useMemo(() => {
         if (!steps.length) return 0;
         const maxOrder = Math.max(...steps.map((s) => s.order_index ?? 0));
@@ -94,6 +129,51 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
         const confirmed = window.confirm("Excluir esta etapa?");
         if (!confirmed) return;
         await deleteStep.mutateAsync(stepId);
+    };
+
+    const handleAddChecklistItem = async (stepId: string) => {
+        const name = newChecklistItem[stepId]?.trim();
+        if (!name) return;
+
+        await createChecklistItem.mutateAsync({
+            step_id: stepId,
+            name,
+            is_completed: false,
+        });
+
+        setNewChecklistItem((prev) => ({ ...prev, [stepId]: "" }));
+    };
+
+    const handleCompleteStep = async (step: Step, checklistItems: ChecklistItem[]) => {
+        const incomplete = checklistItems.some((item) => !item.is_completed);
+        if (incomplete) {
+            toast({
+                title: "Checklist incompleto",
+                description: "Complete todos os itens antes de concluir o step.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        await updateStepStatus.mutateAsync({
+            id: step.id,
+            status: "done",
+            completedBy: currentUser?.id ?? null,
+        });
+
+        const nextSteps: StepWithChecklist[] = steps.map((item) =>
+            item.id === step.id ? { ...item, status: "done" as TaskStatus } : item
+        );
+
+        for (const gate of gates) {
+            const validation = validateGate(nextSteps, { currentStatus: gate.status as GateStatusType | null });
+            if (validation.status !== gate.status) {
+                await updateGateStatus.mutateAsync({
+                    id: gate.id,
+                    status: validation.status,
+                });
+            }
+        }
     };
 
     return (
@@ -197,7 +277,7 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                 Nenhuma etapa cadastrada neste módulo.
                             </div>
                         )}
-                        {steps.map((step: Step) => {
+                        {steps.map((step) => {
                             const status = step.status || 'pending';
                             const stepConfig = {
                                 pending: { icon: Circle, color: "text-muted-foreground" },
@@ -213,18 +293,27 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
 
                             const selectValue = (step.status || 'todo') as TaskStatus;
 
+                            const checklistItems = step.checklist_items || [];
+                            const checklistDone = checklistItems.filter((item) => item.is_completed).length;
+
                             return (
                                 <div
                                     key={step.id}
-                                    className="flex flex-col gap-2 p-3 rounded-lg bg-secondary/30 sm:flex-row sm:items-center"
+                                    className="flex flex-col gap-3 p-3 rounded-lg bg-secondary/30"
                                 >
-                                    <div className="flex items-center gap-3 w-full">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3 w-full">
                                         <StepIcon className={`h-4 w-4 ${stepConfig.color}`} />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">{step.name || step.title}</p>
+                                            <p className="text-sm font-medium truncate">{step.name || "Etapa"}</p>
                                             {step.description && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2">
                                                     {step.description}
+                                                </p>
+                                            )}
+                                            {checklistItems.length > 0 && (
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Checklist: {checklistDone}/{checklistItems.length} concluído
                                                 </p>
                                             )}
                                         </div>
@@ -233,10 +322,14 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                         <Select
                                             value={selectValue}
-                                            onValueChange={(value) => updateStepStatus.mutateAsync({
-                                                id: step.id,
-                                                status: value as TaskStatus
-                                            })}
+                                            onValueChange={(value) => {
+                                                const nextStatus = value as TaskStatus;
+                                                return updateStepStatus.mutateAsync({
+                                                    id: step.id,
+                                                    status: nextStatus,
+                                                    completedBy: nextStatus === "done" ? (currentUser?.id ?? null) : null,
+                                                });
+                                            }}
                                         >
                                             <SelectTrigger className="h-9">
                                                 <SelectValue placeholder="Status" />
@@ -246,10 +339,18 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                                 <SelectItem value="todo">To do</SelectItem>
                                                 <SelectItem value="doing">Doing</SelectItem>
                                                 <SelectItem value="review">Review</SelectItem>
-                                                <SelectItem value="done">Done</SelectItem>
-                                                <SelectItem value="blocked">Blocked</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                            <SelectItem value="done">Done</SelectItem>
+                                            <SelectItem value="blocked">Blocked</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleCompleteStep(step, checklistItems)}
+                                            disabled={checklistItems.some((item) => !item.is_completed)}
+                                        >
+                                            Concluir
+                                        </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -258,6 +359,63 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
+                                    </div>
+                                    </div>
+
+                                    <div className="w-full space-y-2">
+                                        {checklistItems.length > 0 && (
+                                            <div className="space-y-2">
+                                                {checklistItems.map((item) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex items-center justify-between gap-2 rounded-lg bg-background/60 px-3 py-2"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Checkbox
+                                                                checked={item.is_completed || false}
+                                                                onCheckedChange={(checked) => {
+                                                                    toggleChecklistItem.mutateAsync({
+                                                                        id: item.id,
+                                                                        is_completed: Boolean(checked),
+                                                                        completed_by: Boolean(checked) ? currentUser?.id : undefined,
+                                                                    });
+                                                                }}
+                                                            />
+                                                            <span className="text-xs text-muted-foreground">{item.name}</span>
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-destructive"
+                                                            onClick={() => deleteChecklistItem.mutateAsync(item.id)}
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                            <Input
+                                                placeholder="Adicionar checklist"
+                                                value={newChecklistItem[step.id] || ""}
+                                                onChange={(event) =>
+                                                    setNewChecklistItem((prev) => ({
+                                                        ...prev,
+                                                        [step.id]: event.target.value,
+                                                    }))
+                                                }
+                                            />
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleAddChecklistItem(step.id)}
+                                                disabled={createChecklistItem.isPending}
+                                            >
+                                                Adicionar
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -274,10 +432,11 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                 Nenhum gate configurado para este módulo.
                             </div>
                         )}
-                        {gates.map((gate: Gate) => {
+                        {gateValidations.map(({ gate, validation }) => {
                             const conditions = Array.isArray(gate.conditions)
                                 ? (gate.conditions as string[])
                                 : [];
+                            const issuesToShow = validation.issues.slice(0, 4);
                             return (
                                 <div key={gate.id} className="space-y-2">
                                     <GateStatus
@@ -285,7 +444,32 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                         status={(gate.status as GateStatusType) || "pending"}
                                         conditions={conditions}
                                     />
+                                    {issuesToShow.length > 0 && (
+                                        <div className="rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">
+                                            <p className="font-medium text-amber-600">Pendências</p>
+                                            <ul className="mt-1 space-y-1">
+                                                {issuesToShow.map((issue, idx) => (
+                                                    <li key={`${gate.id}-issue-${idx}`}>{issue}</li>
+                                                ))}
+                                                {validation.issues.length > issuesToShow.length && (
+                                                    <li>+ {validation.issues.length - issuesToShow.length} pendências</li>
+                                                )}
+                                            </ul>
+                                        </div>
+                                    )}
                                     <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                updateGateStatus.mutateAsync({
+                                                    id: gate.id,
+                                                    status: validation.status,
+                                                })
+                                            }
+                                        >
+                                            Recalcular gate
+                                        </Button>
                                         <Button
                                             size="sm"
                                             variant="outline"
@@ -318,6 +502,28 @@ export function ModuleCard({ module, isActive = false, agencyId }: ModuleCardPro
                                 </div>
                             );
                         })}
+                        {isActive && onAdvanceModule && (
+                            <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="space-y-1">
+                                        <p className="font-medium text-primary">Avançar módulo</p>
+                                        <p>
+                                            {canAdvance
+                                                ? `Próximo: ${nextModuleName || "Módulo seguinte"}`
+                                                : advanceMessage || "Gate pendente. Recalcule após concluir as evidências."}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={onAdvanceModule}
+                                        disabled={!canAdvance}
+                                    >
+                                        Avançar
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { GitBranch, CheckCircle2, Clock, AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { useClient } from "@/hooks/useClients";
 import { useClientDefaultWorkspace } from "@/hooks/useWorkspaces";
-import { useDeleteWorkflow, useWorkflows } from "@/hooks/useWorkflows";
+import { useDeleteWorkflow, useUpdateModule, useWorkflows } from "@/hooks/useWorkflows";
 import { CreateWorkflowDialog } from "@/components/dialogs/workflows/CreateWorkflowDialog";
 import { CreateModuleDialog } from "@/components/dialogs/modules/CreateModuleDialog";
 import { useMemo, useState } from "react";
@@ -21,6 +21,7 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
     const workspaceId = workspace?.id || "";
     const { data: workflows, isLoading: workflowsLoading, error: workflowsError } = useWorkflows(workspaceId);
     const deleteWorkflow = useDeleteWorkflow();
+    const updateModule = useUpdateModule();
     const [createWorkflowOpen, setCreateWorkflowOpen] = useState(false);
     const [createModuleOpen, setCreateModuleOpen] = useState(false);
 
@@ -60,7 +61,14 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
         not_started: enriched.filter((m: any) => m.status === "not_started").length,
     };
 
-    const activeModule = enriched.find((m: any) => m.status === "in_progress" || m.status === "blocked");
+    const orderedModules = useMemo(
+        () => [...enriched].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+        [enriched]
+    );
+    const activeModule =
+        orderedModules.find((m: any) => m.is_active) ||
+        orderedModules.find((m: any) => m.status === "in_progress" || m.status === "blocked") ||
+        orderedModules[0];
     const nextModuleOrder = useMemo(() => {
         if (!modules.length) return 0;
         const maxOrder = Math.max(...modules.map((module: any) => module.order_index ?? 0));
@@ -72,6 +80,11 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
         const confirmed = window.confirm("Excluir workflow? Essa ação não pode ser desfeita.");
         if (!confirmed) return;
         await deleteWorkflow.mutateAsync(activeWorkflow.id);
+    };
+
+    const handleAdvanceModule = async (currentId: string, nextId: string) => {
+        await updateModule.mutateAsync({ id: currentId, is_active: false });
+        await updateModule.mutateAsync({ id: nextId, is_active: true });
     };
 
     return (
@@ -175,14 +188,24 @@ export function WorkflowTimeline({ clientId }: WorkflowTimelineProps) {
                     </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent className="space-y-3">
-                    {enriched.map((module: any) => (
-                        <ModuleCard
-                            key={module.id}
-                            module={module}
-                            isActive={activeModule?.id === module.id}
-                            agencyId={agencyId}
-                        />
-                    ))}
+                    {orderedModules.map((module: any, index: number) => {
+                        const nextModule = orderedModules[index + 1];
+                        const isActive = activeModule?.id === module.id;
+                        return (
+                            <ModuleCard
+                                key={module.id}
+                                module={module}
+                                isActive={isActive}
+                                agencyId={agencyId}
+                                nextModuleName={nextModule?.name}
+                                onAdvanceModule={
+                                    isActive && nextModule
+                                        ? () => handleAdvanceModule(module.id, nextModule.id)
+                                        : undefined
+                                }
+                            />
+                        );
+                    })}
                 </GlassCardContent>
             </GlassCard>
             )}

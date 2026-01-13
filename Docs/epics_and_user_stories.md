@@ -60,8 +60,8 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 | **Users** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
 | **Clients** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
 | **Client Access (clients_users)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
-| **Workspaces** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
-| **Workflows/Modules/Steps/Gates/Checklist Items** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
+| **Workspaces** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
+| **Workflows/Modules/Steps/Gates/Checklist Items** | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | **65%** |
 | **Tasks** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
 | **Approvals** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **90%** |
 | **Assets** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **80%** |
@@ -70,9 +70,9 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 | **Campaigns** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
 | **Creatives** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
 | **Notes (client_notes)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
-| **KPIs (definitions/values)** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
-| **Experiments** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
-| **Audit Logs** | ✅ | — | ✅ | — | — | ❌ | **20%** |
+| **KPIs (definitions/values)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
+| **Experiments** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
+| **Audit Logs** | ✅ | — | ✅ | — | — | ✅ P0 | **100%** |
 
 Legenda: **—** = não aplicável (seed/manual/backoffice).
 
@@ -80,10 +80,10 @@ Legenda: **—** = não aplicável (seed/manual/backoffice).
 - [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets ✅ / policies pendentes)
 - [ ] Confirmar multi-tenant nas telas (RLS já cobre): todas as queries/hooks devem enviar `agency_id`/`client_id` corretos
 - [x] UI de acesso ao portal (clients_users) e integração do `GrantAccessDialog`
-- [ ] CRUD básico de workspaces/workflows/modules/steps/gates/checklist_items (UI)
-- [ ] UI de gates com `gate_status` (pending/passed/failed/blocked) e condições DoD (JSON)
-- [ ] UI mínima para KPIs e Experiments (listagem/edição)
-- [ ] Audit logs: tela read-only para consulta
+- [x] CRUD básico de workspaces/workflows/modules/steps/gates/checklist_items (UI)
+- [x] UI de gates com `gate_status` (pending/passed/failed/blocked) e condições DoD (JSON)
+- [x] UI mínima para KPIs e Experiments (listagem/edição)
+- [x] Audit logs: tela read-only para consulta
 - [x] `client_notes`: garantir migration + editar/excluir notas
 - [x] Aplicar migrations pendentes (`20260109_add_client_notes.sql`, `20260110_add_asset_status.sql`)
 
@@ -484,11 +484,11 @@ Use este checklist para acompanhar o progresso:
 
 #### Workspaces
 - [x] Hook `useWorkspaces` criado
-- [ ] CRUD UI básico
+- [x] CRUD UI básico
 
 #### Workflows / Modules / Steps / Gates / Checklist
 - [x] Hook `useWorkflows` criado
-- [ ] CRUD UI básico
+- [x] CRUD UI básico
 
 #### Agencies
 - [x] Hook `useAgency` criado
@@ -501,15 +501,15 @@ Use este checklist para acompanhar o progresso:
 
 #### KPIs (definitions/values)
 - [x] Hook `useKPIs` criado
-- [ ] UI básica (listagem/edição)
+- [x] UI básica (listagem/edição)
 
 #### Experiments
 - [x] Hook `useExperiments` criado
-- [ ] UI básica (listagem/edição)
+- [x] UI básica (listagem/edição)
 
 #### Audit Logs
 - [x] Hook `useAuditLogs` criado
-- [ ] UI read-only (consulta)
+- [x] UI read-only (consulta)
 
 ---
 
@@ -748,62 +748,65 @@ Use este checklist para acompanhar o progresso:
 - [x] Card expansível por módulo
 - [x] Lista de steps com status
 - [x] Indicador de owner e SLA
-- [ ] Dados reais do Supabase
+- [x] Dados reais do Supabase
 
 **Arquivos:**
 - `src/components/workspace/ModuleCard.tsx` (modificar)
 
 ---
 
-#### US 3.3 — Validar Gate (Definition of Done) ❌
+#### US 3.3 — Validar Gate (Definition of Done) ✅
 **Como** sistema (ou usuário clicando),  
 **Quero** validar se o gate do módulo foi cumprido,  
 **Para que** o módulo só avance quando os requisitos forem atendidos.
 
 **Critérios de Aceite:**
-- [ ] Função `validateGate()` implementada
-- [ ] Verificar todos steps completed
-- [ ] Verificar checklist items required marcados
-- [ ] Atualizar status do gate (passed/failed)
-- [ ] Exibir motivo de falha se houver
+- [x] Função `validateGate()` implementada
+- [x] Verificar todos steps completed
+- [x] Verificar checklist items required marcados
+- [x] Atualizar status do gate (passed/pending/blocked; falha manual preservada)
+- [x] Exibir motivo de falha se houver (lista de pendências)
+
+**Nota:** MVP considera todos os checklist items como required.
 
 **Arquivos:**
-- `src/lib/workflowEngine.ts` (criar)
-- `src/hooks/useWorkflowEngine.ts` (criar)
-- `src/components/workspace/GateStatus.tsx` (modificar)
+- `src/lib/workflowEngine.ts` (criado)
+- `src/hooks/useWorkflowEngine.ts` (criado)
+- `src/components/workspace/ModuleCard.tsx` (recalcular + pendências)
 
 ---
 
-#### US 3.4 — Bloquear Avanço se Gate Falhar ❌
+#### US 3.4 — Bloquear Avanço se Gate Falhar ✅
 **Como** usuário,  
 **Quero** ser impedido de avançar se o gate não passou,  
 **Para que** eu não pule etapas críticas.
 
 **Critérios de Aceite:**
-- [ ] Botão "Avançar" desabilitado se gate = failed
-- [ ] Mensagem explicando o que falta
-- [ ] Visual claro de bloqueio
+- [x] Botão "Avançar" desabilitado se gate = failed
+- [x] Mensagem explicando o que falta
+- [x] Visual claro de bloqueio
 
 **Arquivos:**
-- `src/components/workspace/ModuleCard.tsx` (modificar)
-- `src/components/workspace/GateStatus.tsx` (modificar)
+- `src/components/workspace/ModuleCard.tsx` (avançar + bloqueio)
+- `src/components/workspace/WorkflowTimeline.tsx` (avançar módulo)
 
 ---
 
-#### US 3.5 — Marcar Step como Concluído ❌
+#### US 3.5 — Marcar Step como Concluído ✅
 **Como** usuário responsável,  
 **Quero** marcar um step como concluído,  
 **Para que** o progresso seja registrado.
 
 **Critérios de Aceite:**
-- [ ] Botão de concluir no step
-- [ ] Apenas se todos checklist required estiverem marcados
-- [ ] Registrar completed_at e completed_by
-- [ ] Revalidar gate do módulo automaticamente
+- [x] Botão de concluir no step
+- [x] Apenas se todos checklist required estiverem marcados
+- [x] Registrar completed_at e completed_by
+- [x] Revalidar gate do módulo automaticamente
 
 **Arquivos:**
-- `src/lib/workflowEngine.ts` (função completeStep)
-- `src/hooks/useSteps.ts` (criar)
+- `src/components/workspace/ModuleCard.tsx` (botão concluir + status)
+- `src/hooks/useWorkflows.ts` (useUpdateStepStatus)
+- `supabase/migrations/20260110_add_step_completion.sql` (completed_at/completed_by)
 
 ---
 
