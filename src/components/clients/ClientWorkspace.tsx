@@ -39,6 +39,7 @@ import { useLeads } from "@/hooks/useLeads";
 import { useState } from "react";
 import { formatCompactCurrency, formatCompactNumber } from "@/lib/utils";
 import { EditClientDialog } from "@/components/dialogs/clients/EditClientDialog";
+import { ManageAccessDialog } from "@/components/dialogs/access/ManageAccessDialog";
 
 export function ClientWorkspace() {
   const { id } = useParams();
@@ -49,6 +50,7 @@ export function ClientWorkspace() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [accessOpen, setAccessOpen] = useState(false);
 
   if (clientLoading || campaignsLoading || leadsLoading) {
     return (
@@ -177,6 +179,15 @@ export function ClientWorkspace() {
             <Button variant="outline" size="sm" className="gap-2">
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Compartilhar</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setAccessOpen(true)}
+            >
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Acessos</span>
             </Button>
             <Button size="sm" className="gap-2" onClick={() => setEditClientOpen(true)}>
               <Settings className="h-4 w-4" />
@@ -322,6 +333,12 @@ export function ClientWorkspace() {
         onOpenChange={setEditClientOpen}
         client={client}
         onDeleted={() => navigate("/clients")}
+      />
+      <ManageAccessDialog
+        open={accessOpen}
+        onOpenChange={setAccessOpen}
+        clientId={client.id}
+        agencyId={client.agency_id}
       />
     </div>
   );

@@ -59,7 +59,7 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 | **Agencies** | ✅ | — | ✅ | ✅ | — | ❌ | **40%** |
 | **Users** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
 | **Clients** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
-| **Client Access (clients_users)** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ⚠️ | **50%** |
+| **Client Access (clients_users)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
 | **Workspaces** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
 | **Workflows/Modules/Steps/Gates/Checklist Items** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ | **40%** |
 | **Tasks** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
@@ -69,7 +69,7 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 | **Message Templates** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
 | **Campaigns** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
 | **Creatives** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P1 | **100%** |
-| **Notes (client_notes)** | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | **60%** |
+| **Notes (client_notes)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ P0 | **100%** |
 | **KPIs (definitions/values)** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
 | **Experiments** | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ❌ P2 | **30%** |
 | **Audit Logs** | ✅ | — | ✅ | — | — | ❌ | **20%** |
@@ -77,15 +77,15 @@ Este documento organiza todos os requisitos do PDR em **Epics** e **User Stories
 Legenda: **—** = não aplicável (seed/manual/backoffice).
 
 ### Pendências do Epic 0 (PDR §11.3)
-- [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets + policies)
+- [ ] Storage Supabase para `assets` e anexos de `approvals` (buckets ✅ / policies pendentes)
 - [ ] Confirmar multi-tenant nas telas (RLS já cobre): todas as queries/hooks devem enviar `agency_id`/`client_id` corretos
-- [ ] UI de acesso ao portal (clients_users) e integração do `GrantAccessDialog`
+- [x] UI de acesso ao portal (clients_users) e integração do `GrantAccessDialog`
 - [ ] CRUD básico de workspaces/workflows/modules/steps/gates/checklist_items (UI)
 - [ ] UI de gates com `gate_status` (pending/passed/failed/blocked) e condições DoD (JSON)
 - [ ] UI mínima para KPIs e Experiments (listagem/edição)
 - [ ] Audit logs: tela read-only para consulta
-- [ ] `client_notes`: garantir migration + editar/excluir notas
-- [ ] Aplicar migrations pendentes (`20260109_add_client_notes.sql`, `20260110_add_asset_status.sql`)
+- [x] `client_notes`: garantir migration + editar/excluir notas
+- [x] Aplicar migrations pendentes (`20260109_add_client_notes.sql`, `20260110_add_asset_status.sql`)
 
 ### US 0.1 — Hooks Supabase por Entidade ✅ COMPLETO
 
@@ -393,7 +393,7 @@ Estado da migração: Clientes/Operations/CRM/Approvals/Assets/Content/Media/Not
 - [x] Substituir `import { mockX } from @/data/mockData` (para os componentes migrados)
 - [x] Usar `const { data, isLoading, error } = useX()` (para os componentes migrados)
 - [x] Exibir loading state (spinner ou skeleton)
-- [ ] Exibir error state (NotesTab ainda sem erro)
+- [x] Exibir error state (NotesTab agora com erro)
 - [x] Exibir empty state
 - [x] Funcionar com dados reais (validar client_notes no DB)
 
@@ -471,16 +471,16 @@ Use este checklist para acompanhar o progresso:
 - [x] Hook `useNotes` criado
 - [x] `CreateNoteDialog.tsx` criado
 - [x] `NotesTab.tsx` usando hook
-- [ ] Update funcional
-- [ ] Delete funcional
-- [ ] Validar migration `client_notes`
+- [x] Update funcional
+- [x] Delete funcional
+- [x] Validar migration `client_notes`
 
 #### Client Access (clients_users)
 - [x] Hook `useClientAccess` criado
 - [x] `GrantAccessDialog.tsx` criado
-- [ ] Integrar dialog em tela de clientes
-- [ ] Listar acessos e editar role
-- [ ] Revogar acesso
+- [x] Integrar dialog em tela de clientes
+- [x] Listar acessos e editar role
+- [x] Revogar acesso
 
 #### Workspaces
 - [x] Hook `useWorkspaces` criado

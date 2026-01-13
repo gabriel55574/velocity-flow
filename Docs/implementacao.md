@@ -1,6 +1,6 @@
 # 📘 Guia de Implementação — Velocity Agency OS
 
-**Última atualização:** 10 jan 2026 13:03  
+**Última atualização:** 10 jan 2026 16:05  
 **Propósito:** Documentação técnica COMPLETA para continuidade do projeto sem erros.  
 **Documento PDR Base:** `velocity_agency_os_PDR_v1_0.md`
 
@@ -52,10 +52,75 @@ Este documento serve como **fonte única de verdade** para implementação. Cont
 | RLS Policies | ✅ | Migration SQL | 23 policies multi-tenant |
 | Seed Data | ✅ | `supabase/seeds/demo_data.sql` | Dados demo |
 | **Auth** | ❌ | Não implementado | Usar `supabase.auth` |
-| **Storage** | ❌ | Não configurado | Precisa criar buckets |
+| **Storage** | ⚠️ | Buckets criados | Policies pendentes (storage.objects) |
 | **Edge Functions** | ❌ | Pasta não existe | Criar `/supabase/functions` |
 
 ---
+
+### 1.3 Storage (Buckets + Policies)
+
+**Buckets criados via migration:** `assets-public`, `assets-private`, `approvals`.  
+**Pendência:** aplicar policies em `storage.objects` (requer role `supabase_storage_admin`).
+
+SQL sugerido (rodar no SQL Editor com permissão de owner em `storage.objects`):
+
+```sql
+-- Agency members: full access within their agency folder
+create policy "Agency can manage storage objects"
+on storage.objects
+for all
+using (
+  bucket_id in ('assets-public', 'assets-private', 'approvals')
+  and (storage.foldername(name))[1] = auth.user_agency_id()::text
+)
+with check (
+  bucket_id in ('assets-public', 'assets-private', 'approvals')
+  and (storage.foldername(name))[1] = auth.user_agency_id()::text
+);
+
+-- Clients: read assets/approvals from their client folder
+create policy "Clients can read assets and approvals"
+on storage.objects
+for select
+using (
+  bucket_id in ('assets-public', 'approvals')
+  and exists (
+    select 1
+    from public.clients_users cu
+    join public.clients c on c.id = cu.client_id
+    where cu.user_id = auth.uid()
+      and (storage.foldername(name))[1] = c.agency_id::text
+      and (storage.foldername(name))[2] = cu.client_id::text
+  )
+);
+
+-- Clients: upload/update/delete within their client folder
+create policy "Clients can manage their assets and approvals"
+on storage.objects
+for all
+using (
+  bucket_id in ('assets-public', 'approvals')
+  and exists (
+    select 1
+    from public.clients_users cu
+    join public.clients c on c.id = cu.client_id
+    where cu.user_id = auth.uid()
+      and (storage.foldername(name))[1] = c.agency_id::text
+      and (storage.foldername(name))[2] = cu.client_id::text
+  )
+)
+with check (
+  bucket_id in ('assets-public', 'approvals')
+  and exists (
+    select 1
+    from public.clients_users cu
+    join public.clients c on c.id = cu.client_id
+    where cu.user_id = auth.uid()
+      and (storage.foldername(name))[1] = c.agency_id::text
+      and (storage.foldername(name))[2] = cu.client_id::text
+  )
+);
+```
 
 ## 2. Estrutura de Diretórios Completa
 
@@ -1221,6 +1286,34 @@ npx supabase gen types typescript --project-id cuowpgsuaylnqntwnnur > src/types/
 ---
 
 ## 10. Changelog de Implementação
+
+### 10 jan 2026 14:20 — Workflow UI (modules/steps/gates)
+
+- ✅ `ModuleCard` agora suporta ações de CRUD rápidas: criar step, alterar status via Select (backlog/todo/doing/review/done/blocked), excluir step e excluir módulo
+- ✅ `GateStatus` atualizado para `gate_status` completo (pending/passed/failed/blocked) com visual e DoD
+- ✅ Ações de gate direto na UI (aprovar, reprovar, bloquear, resetar) integradas ao `useUpdateGateStatus`
+- ✅ `CreateStepDialog` integrado ao módulo ativo com ordem automática e time members via `agencyId`
+
+### 10 jan 2026 14:45 — Gestão de acessos (clients_users)
+
+- ✅ Criado `ManageAccessDialog` para listar, alterar role e revogar acessos do cliente
+- ✅ Integração no header do `ClientWorkspace` com botão "Acessos"
+- ✅ Reuso do `GrantAccessDialog` para conceder novos acessos dentro do fluxo
+
+### 10 jan 2026 15:10 — Notas (client_notes) CRUD UI
+
+- ✅ Criado `EditNoteDialog` com edição e exclusão de notas
+- ✅ `NotesTab` agora possui ação de edição por nota + estado de erro
+
+### 10 jan 2026 15:35 — Migrations aplicadas (Supabase)
+
+- ✅ Migration `20260109_add_client_notes.sql` aplicada (note_type + client_notes + RLS)
+- ✅ Migration `20260110_add_asset_status.sql` aplicada (asset_status + coluna status)
+
+### 10 jan 2026 16:05 — Storage (buckets)
+
+- ✅ Criados buckets `assets-public`, `assets-private`, `approvals`
+- ⚠️ Policies em `storage.objects` pendentes (owner `supabase_storage_admin`)
 
 ### 10 jan 2026 11:27 — Integração de Dialogs P1
 

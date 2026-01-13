@@ -7,14 +7,16 @@ import {
     Plus,
     Search,
     User as UserIcon,
-    Loader2
+    Loader2,
+    Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { useNotes } from "@/hooks/useNotes";
+import { useNotes, type ClientNote } from "@/hooks/useNotes";
 import { useCurrentUser } from "@/hooks/useUsers";
 import { CreateNoteDialog } from "@/components/dialogs/notes/CreateNoteDialog";
+import { EditNoteDialog } from "@/components/dialogs/notes/EditNoteDialog";
 
 const typeConfig = {
     note: {
@@ -38,18 +40,11 @@ const typeConfig = {
 };
 
 interface NoteCardProps {
-    note: {
-        id: string;
-        type: 'note' | 'decision' | 'ata';
-        content: string;
-        created_at: string;
-        user?: {
-            full_name: string;
-        };
-    };
+    note: ClientNote;
+    onEdit?: (note: ClientNote) => void;
 }
 
-function NoteCard({ note }: NoteCardProps) {
+function NoteCard({ note, onEdit }: NoteCardProps) {
     const config = typeConfig[note.type] || typeConfig.note;
     const TypeIcon = config.icon;
 
@@ -60,7 +55,7 @@ function NoteCard({ note }: NoteCardProps) {
                     <TypeIcon className={`h-5 w-5 ${config.color}`} />
                 </div>
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>
                             {config.label}
                         </span>
@@ -73,6 +68,16 @@ function NoteCard({ note }: NoteCardProps) {
                                 minute: '2-digit'
                             })}
                         </span>
+                        {onEdit && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => onEdit(note)}
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                        )}
                     </div>
                     <p className="text-sm">{note.content}</p>
                     <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
@@ -93,9 +98,11 @@ export function NotesTab({ clientId }: NotesTabProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<"all" | "note" | "decision" | "ata">("all");
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedNote, setSelectedNote] = useState<ClientNote | null>(null);
 
     const { data: currentUser } = useCurrentUser();
-    const { data: notes, isLoading } = useNotes({
+    const { data: notes, isLoading, error } = useNotes({
         client_id: clientId,
         type: filterType === "all" ? undefined : filterType
     });
@@ -171,9 +178,20 @@ export function NotesTab({ clientId }: NotesTabProps) {
                             <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
                             <p className="text-sm text-muted-foreground">Carregando notas...</p>
                         </div>
+                    ) : error ? (
+                        <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+                            Erro ao carregar notas. Tente novamente.
+                        </div>
                     ) : filteredNotes.length > 0 ? (
                         filteredNotes.map((note) => (
-                            <NoteCard key={note.id} note={note} />
+                            <NoteCard
+                                key={note.id}
+                                note={note}
+                                onEdit={(selected) => {
+                                    setSelectedNote(selected);
+                                    setIsEditDialogOpen(true);
+                                }}
+                            />
                         ))
                     ) : (
                         <div className="text-center py-8 text-muted-foreground">
@@ -194,6 +212,15 @@ export function NotesTab({ clientId }: NotesTabProps) {
                     userId={currentUser.id}
                 />
             )}
+
+            <EditNoteDialog
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) setSelectedNote(null);
+                }}
+                note={selectedNote}
+            />
         </div>
     );
 }

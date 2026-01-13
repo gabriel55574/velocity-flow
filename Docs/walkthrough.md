@@ -1,6 +1,6 @@
 # 📝 Walkthrough — Velocity Agency OS
 
-**Última atualização:** 10/01/2026 13:03  
+**Última atualização:** 10/01/2026 16:05  
 **Propósito:** Registro histórico do que foi implementado no projeto.
 
 ---
@@ -15,6 +15,35 @@
 ---
 
 ## Histórico de Implementação
+
+### 📅 10/01/2026 — Sessão 4: Workflow UI (Modules/Steps/Gates)
+
+- Atualizado `ModuleCard` com ações de CRUD rápidas: criar step, alterar status, excluir step/módulo, ordenação automática
+- `GateStatus` agora cobre `gate_status` (pending/passed/failed/blocked) e mostra DoD/conditions
+- Ações de gate (aprovar/reprovar/bloquear/resetar) integradas ao `useUpdateGateStatus`
+- Integração do `CreateStepDialog` com `agencyId` para carregar responsáveis
+
+### 📅 10/01/2026 — Sessão 5: Gestão de Acessos (clients_users)
+
+- Novo `ManageAccessDialog` listando usuários com acesso, edição de role e revogação
+- Botão "Acessos" no header do `ClientWorkspace` abrindo o gerenciamento
+- Reuso do `GrantAccessDialog` para conceder acesso dentro do fluxo
+
+### 📅 10/01/2026 — Sessão 6: Notas (client_notes) CRUD UI
+
+- `EditNoteDialog` para editar e excluir notas
+- `NotesTab` com ação de edição e tratamento de erro
+
+### 📅 10/01/2026 — Sessão 7: Migrations aplicadas
+
+- Aplicada migration `20260109_add_client_notes.sql` (note_type + client_notes + RLS)
+- Aplicada migration `20260110_add_asset_status.sql` (asset_status + coluna status)
+
+### 📅 10/01/2026 — Sessão 8: Storage (buckets)
+
+- Buckets criados: `assets-public`, `assets-private`, `approvals`
+- Policies em `storage.objects` permanecem pendentes (owner `supabase_storage_admin`)
+
 
 ### 📅 09/01/2026 — Sessão 1: Documentação e Planejamento
 
